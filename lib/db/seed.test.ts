@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createClient } from "@libsql/client";
 import { migrate } from "./migrate";
-import { seed } from "./seed";
+import { seed, expectedClassifications } from "./seed";
 
 describe("seed - history", () => {
   it("creates 13 suppliers, 12 contracts, and 12 months of green history", async () => {
@@ -41,6 +41,55 @@ describe("seed - history", () => {
       args: ["sup-corvus"],
     });
     expect(Number(corvusRiskEvents.rows[0].count)).toBe(1);
+
+    db.close();
+  });
+});
+
+describe("seed - pending scenarios", () => {
+  it("creates exactly 13 pending invoices matching expectedClassifications", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const pending = await db.execute(
+      "SELECT invoice_number as invoiceNumber FROM invoices WHERE status = 'pending' ORDER BY due_date ASC"
+    );
+    expect(pending.rows.length).toBe(13);
+
+    const pendingNumbers = new Set(pending.rows.map((row) => String(row.invoiceNumber)));
+    expect(expectedClassifications.length).toBe(13);
+    for (const expected of expectedClassifications) {
+      expect(pendingNumbers.has(expected.invoiceNumber)).toBe(true);
+    }
+
+    db.close();
+  });
+
+  it("prints a foreign IBAN on the Meridian invoice despite its FR registration", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const row = await db.execute({
+      sql: "SELECT printed_iban as printedIban FROM invoices WHERE invoice_number = ?",
+      args: ["PEND-MERIDIAN-01"],
+    });
+    expect(String(row.rows[0].printedIban).startsWith("DE")).toBe(true);
+
+    db.close();
+  });
+
+  it("reuses an already-approved invoice number for the Aqua duplicate scenario", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const matches = await db.execute({
+      sql: "SELECT status FROM invoices WHERE invoice_number = ? ORDER BY status",
+      args: ["HIST-AQUA-REALESTATE-M6"],
+    });
+    expect(matches.rows.map((r) => String(r.status))).toEqual(["approved", "pending"]);
 
     db.close();
   });

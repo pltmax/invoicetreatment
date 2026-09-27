@@ -191,6 +191,204 @@ function buildHistoryInvoices(
   return rows;
 }
 
+function buildPendingInvoiceStatements(
+  today: Date,
+  supplierById: Map<string, Supplier>
+): WriteStatement[] {
+  const statements: WriteStatement[] = [];
+  const mismatchedSiren = generateValidSiren("40000099");
+
+  interface PendingSeed {
+    id: string;
+    entityId: string;
+    supplierId: string;
+    contractId: string | null;
+    invoiceNumber: string;
+    category: string;
+    amountExclVatCents: number;
+    dueInDays: number;
+    printedIban?: string;
+    printedSiren?: string;
+  }
+
+  const pending: PendingSeed[] = [
+    {
+      id: "inv-pending-novalink",
+      entityId: "ent-telecom",
+      supplierId: "sup-novalink",
+      contractId: "con-novalink-telecom",
+      invoiceNumber: "PEND-NOVALINK-01",
+      category: "telecom_maintenance",
+      amountExclVatCents: 180000,
+      dueInDays: 2,
+    },
+    {
+      id: "inv-pending-cloudnimbus",
+      entityId: "ent-services",
+      supplierId: "sup-cloudnimbus",
+      contractId: "con-cloudnimbus-services",
+      invoiceNumber: "PEND-CLOUDNIMBUS-01",
+      category: "cloud_hosting",
+      amountExclVatCents: 220000,
+      dueInDays: 3,
+    },
+    {
+      id: "inv-pending-fontaine",
+      entityId: "ent-media",
+      supplierId: "sup-fontaine",
+      contractId: "con-fontaine-media",
+      invoiceNumber: "PEND-FONTAINE-01",
+      category: "consulting",
+      amountExclVatCents: 180000,
+      dueInDays: 4,
+    },
+    {
+      id: "inv-pending-pixelforge",
+      entityId: "ent-realestate",
+      supplierId: "sup-pixelforge",
+      contractId: null,
+      invoiceNumber: "PEND-PIXELFORGE-01",
+      category: "design",
+      amountExclVatCents: 300000,
+      dueInDays: 5,
+    },
+    {
+      id: "inv-pending-translogistique",
+      entityId: "ent-services",
+      supplierId: "sup-translogistique",
+      contractId: null,
+      invoiceNumber: "PEND-TRANSLOGISTIQUE-01",
+      category: "logistics",
+      amountExclVatCents: 132000,
+      dueInDays: 6,
+    },
+    {
+      id: "inv-pending-klaxon",
+      entityId: "ent-telecom",
+      supplierId: "sup-klaxon",
+      contractId: null,
+      invoiceNumber: "PEND-KLAXON-01",
+      category: "marketing",
+      amountExclVatCents: 95000,
+      dueInDays: 7,
+    },
+    {
+      id: "inv-pending-aqua",
+      entityId: "ent-realestate",
+      supplierId: "sup-aqua",
+      contractId: "con-aqua-realestate",
+      invoiceNumber: "HIST-AQUA-REALESTATE-M6",
+      category: "facilities",
+      amountExclVatCents: 200000,
+      dueInDays: 8,
+    },
+    {
+      id: "inv-pending-greenwave",
+      entityId: "ent-services",
+      supplierId: "sup-greenwave",
+      contractId: "con-greenwave-services",
+      invoiceNumber: "PEND-GREENWAVE-01",
+      category: "utilities",
+      amountExclVatCents: 260000,
+      dueInDays: 9,
+      printedIban: frenchIban(8),
+    },
+    {
+      id: "inv-pending-meridian",
+      entityId: "ent-realestate",
+      supplierId: "sup-meridian",
+      contractId: "con-meridian-realestate",
+      invoiceNumber: "PEND-MERIDIAN-01",
+      category: "fleet",
+      amountExclVatCents: 175000,
+      dueInDays: 10,
+      printedIban: foreignIban(9),
+    },
+    {
+      id: "inv-pending-ondine",
+      entityId: "ent-media",
+      supplierId: "sup-ondine",
+      contractId: "con-ondine-media",
+      invoiceNumber: "PEND-ONDINE-01",
+      category: "office_supplies",
+      amountExclVatCents: 40000,
+      dueInDays: 12,
+      printedSiren: mismatchedSiren,
+    },
+    {
+      id: "inv-pending-atlas",
+      entityId: "ent-realestate",
+      supplierId: "sup-atlas",
+      contractId: null,
+      invoiceNumber: "PEND-ATLAS-01",
+      category: "equipment",
+      amountExclVatCents: 8000000,
+      dueInDays: 14,
+    },
+    {
+      id: "inv-pending-solstice",
+      entityId: "ent-realestate",
+      supplierId: "sup-solstice",
+      contractId: "con-solstice-realestate",
+      invoiceNumber: "PEND-SOLSTICE-01",
+      category: "maintenance",
+      amountExclVatCents: 400000,
+      dueInDays: 17,
+    },
+    {
+      id: "inv-pending-corvus",
+      entityId: "ent-telecom",
+      supplierId: "sup-corvus",
+      contractId: "con-corvus-telecom",
+      invoiceNumber: "PEND-CORVUS-01",
+      category: "it_integration",
+      amountExclVatCents: 300000,
+      dueInDays: 20,
+    },
+  ];
+
+  for (const invoice of pending) {
+    const supplier = supplierById.get(invoice.supplierId);
+    if (!supplier) throw new Error(`unknown supplier ${invoice.supplierId}`);
+    statements.push({
+      sql: `INSERT INTO invoices
+        (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, due_date, printed_iban, printed_siren, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      args: [
+        invoice.id,
+        invoice.entityId,
+        invoice.supplierId,
+        invoice.contractId,
+        invoice.invoiceNumber,
+        invoice.category,
+        invoice.amountExclVatCents,
+        Math.round(invoice.amountExclVatCents * 1.2),
+        isoDate(addDays(today, invoice.dueInDays)),
+        invoice.printedIban ?? supplier.registeredIban,
+        invoice.printedSiren ?? supplier.siren,
+      ],
+    });
+  }
+
+  return statements;
+}
+
+export const expectedClassifications: ExpectedClassification[] = [
+  { invoiceNumber: "PEND-NOVALINK-01", scenario: "Maintenance télécom récurrente conforme au contrat", expectedLevel: "green" },
+  { invoiceNumber: "PEND-CLOUDNIMBUS-01", scenario: "Hébergement cloud récurrent conforme au contrat", expectedLevel: "green" },
+  { invoiceNumber: "PEND-FONTAINE-01", scenario: "Fournisseur connu, +20% vs historique", expectedLevel: "orange" },
+  { invoiceNumber: "PEND-PIXELFORGE-01", scenario: "Nouveau fournisseur, 3 000 € HT", expectedLevel: "orange" },
+  { invoiceNumber: "PEND-TRANSLOGISTIQUE-01", scenario: "Fournisseur connu, aucun contrat associé", expectedLevel: "orange" },
+  { invoiceNumber: "PEND-KLAXON-01", scenario: "Catégorie inhabituelle pour la filiale télécom", expectedLevel: "orange" },
+  { invoiceNumber: "HIST-AQUA-REALESTATE-M6", scenario: "Même fournisseur et même numéro de facture qu'une facture déjà approuvée", expectedLevel: "red" },
+  { invoiceNumber: "PEND-GREENWAVE-01", scenario: "IBAN enregistré du fournisseur modifié il y a 5 jours", expectedLevel: "red" },
+  { invoiceNumber: "PEND-MERIDIAN-01", scenario: "Fournisseur FR avec un IBAN imprimé étranger", expectedLevel: "red" },
+  { invoiceNumber: "PEND-ONDINE-01", scenario: "SIREN imprimé différent du registre", expectedLevel: "red" },
+  { invoiceNumber: "PEND-ATLAS-01", scenario: "Achat d'équipement de 80 000 € HT", expectedLevel: "red" },
+  { invoiceNumber: "PEND-SOLSTICE-01", scenario: "Même fournisseur et catégorie, filiale facturée 2x plus qu'une autre", expectedLevel: "red" },
+  { invoiceNumber: "PEND-CORVUS-01", scenario: "Fournisseur avec un événement de risque il y a 2 mois", expectedLevel: "red" },
+];
+
 export async function seed(db: Client): Promise<void> {
   const today = new Date();
   const suppliers = buildSuppliers();
@@ -342,6 +540,8 @@ export async function seed(db: Client): Promise<void> {
       });
     }
   }
+
+  statements.push(...buildPendingInvoiceStatements(today, supplierById));
 
   await db.batch(
     statements.map((s) => ({ sql: s.sql, args: s.args })),
