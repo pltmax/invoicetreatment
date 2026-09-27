@@ -1157,7 +1157,7 @@ git commit -m "Add lib/sessions.ts: the single place a session and its decisions
 No dedicated unit test — server actions that call `redirect()` are awkward to unit test
 in isolation (Next.js's `redirect()` throws a special control-flow signal outside a real
 request), and the underlying logic they call (`createSession`, `getInvoicesByIds`,
-`getClassification`) is already covered by Tasks 5-7's tests. This action is verified by
+`getClassification`) is already covered by Tasks 5-6's tests. This action is verified by
 the end-to-end walkthrough in Task 14.
 
 - [ ] **Step 1: Write the implementation**
@@ -1498,8 +1498,8 @@ git commit -m "Add dashboard: grouped invoice list, checkboxes, sticky batch-app
 - Create: `app/(app)/invoices/[id]/page.tsx`
 
 **Interfaces:**
-- Consumes: `loadContext` (existing, extended in Task 1), `getClassification`,
-  `getDecisionSessionId` (Task 5/6), `LevelBadge`/`Amount`/`ReasonList` (Task 3),
+- Consumes: `loadContext` (existing, extended in Task 1), `getClassification` (Task 5),
+  `getDecisionSessionId` (Task 7), `LevelBadge`/`Amount`/`ReasonList` (Task 3),
   `signSingleDecision` (Task 8), `median` from `lib/rules/stats.ts` (existing —
   **reuse it, do not reimplement**), `HISTORY_SAMPLE` from `lib/rules/thresholds.ts`
   (existing).
