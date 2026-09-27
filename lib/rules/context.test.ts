@@ -31,6 +31,7 @@ describe("loadContext", () => {
     expect(ctx.subsidiaryApprovedCategories).toContain("telecom_maintenance");
     expect(ctx.otherSupplierInvoices).toHaveLength(12);
     expect(ctx.ibanHistory.length).toBeGreaterThanOrEqual(1);
+    expect(ctx.invoice.status).toBe("pending");
 
     db.close();
   });

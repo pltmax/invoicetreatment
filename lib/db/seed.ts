@@ -553,8 +553,8 @@ export async function seed(db: Client): Promise<void> {
       })
     );
     statements.push({
-      sql: "INSERT INTO sessions (id, kind, content_hash, signed_at) VALUES (?, 'batch', ?, ?)",
-      args: [sessionId, contentHash, signedAt],
+      sql: "INSERT INTO sessions (id, kind, content_hash, signature_ref, signed_at) VALUES (?, 'batch', ?, ?, ?)",
+      args: [sessionId, contentHash, `MOCK-${sessionId}`, signedAt],
     });
     for (const invoice of invoicesThisMonth) {
       statements.push({

@@ -31,7 +31,8 @@ export async function loadContext(
         invoices.issue_date AS issueDate,
         invoices.printed_iban AS printedIban,
         invoices.printed_siren AS printedSiren,
-        invoices.printed_vat_number AS printedVatNumber
+        invoices.printed_vat_number AS printedVatNumber,
+        invoices.status AS status
       FROM invoices
       JOIN entities ON entities.id = invoices.entity_id
       WHERE invoices.id = ?
@@ -58,6 +59,7 @@ export async function loadContext(
     printedIban: String(invoiceRow.printedIban),
     printedSiren: String(invoiceRow.printedSiren),
     printedVatNumber: String(invoiceRow.printedVatNumber),
+    status: String(invoiceRow.status),
   };
 
   const cutoff = monthsAgoIso(today, RISK_WINDOW_MONTHS);

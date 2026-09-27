@@ -51,6 +51,7 @@ export interface InvoiceContextInvoice {
   printedIban: string;
   printedSiren: string;
   printedVatNumber: string;
+  status: string;
 }
 
 export interface InvoiceContextSupplier {

@@ -93,6 +93,7 @@ CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
   kind TEXT NOT NULL CHECK (kind IN ('batch', 'single')),
   content_hash TEXT NOT NULL,
+  signature_ref TEXT NOT NULL,
   signed_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -102,6 +103,7 @@ CREATE TABLE decisions (
   session_id TEXT NOT NULL REFERENCES sessions(id),
   invoice_id TEXT NOT NULL UNIQUE REFERENCES invoices(id),
   outcome TEXT NOT NULL CHECK (outcome IN ('approved', 'rejected')) DEFAULT 'approved',
+  comment TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

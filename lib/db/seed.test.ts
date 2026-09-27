@@ -129,3 +129,19 @@ describe("seed - schema additions", () => {
     db.close();
   });
 });
+
+describe("seed - session signature_ref", () => {
+  it("backfills every historical session with a mocked signature_ref", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await db.execute("SELECT signature_ref as signatureRef FROM sessions");
+    expect(rows.rows.length).toBeGreaterThan(0);
+    for (const row of rows.rows) {
+      expect(String(row.signatureRef).startsWith("MOCK-")).toBe(true);
+    }
+
+    db.close();
+  });
+});
