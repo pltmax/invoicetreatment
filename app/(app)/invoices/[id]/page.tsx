@@ -238,17 +238,21 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
       <div>
         <h2 className="mb-2 text-sm font-semibold text-gray-900">Historique IBAN</h2>
-        <ul className="divide-y divide-gray-100 text-sm">
-          {context.ibanHistory.map((entry, index) => (
-            <li key={index} className="flex items-center justify-between py-2">
-              <span className="text-gray-900">{formatIbanGrouped(entry.iban)}</span>
-              <span className="text-gray-500">
-                {formatDateFr(entry.effectiveFrom)}
-                {index === 0 && <span className="ml-2 text-green-700">Actif</span>}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {context.ibanHistory.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucun historique d&apos;IBAN disponible.</p>
+        ) : (
+          <ul className="divide-y divide-gray-100 text-sm">
+            {context.ibanHistory.map((entry, index) => (
+              <li key={index} className="flex items-center justify-between py-2">
+                <span className="text-gray-900">{formatIbanGrouped(entry.iban)}</span>
+                <span className="text-gray-500">
+                  {formatDateFr(entry.effectiveFrom)}
+                  {index === 0 && <span className="ml-2 text-green-700">Actif</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div>
