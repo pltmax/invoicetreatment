@@ -37,8 +37,8 @@
 
 **Interfaces:**
 - Produces: `sessions.signature_ref TEXT NOT NULL`, `decisions.comment TEXT`,
-  `InvoiceContextInvoice.status: string` — consumed by Task 7 (`lib/sessions.ts`),
-  Task 8 (`app/actions/sign.ts`), and Task 11 (Screen 2's "already decided" check).
+  `InvoiceContextInvoice.status: string` — consumed by Task 8 (`app/actions/sign.ts`'s
+  `signSingleDecision`) and Task 11 (Screen 2's "already decided" check).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -683,14 +683,14 @@ git commit -m "Add getClassification and getInvoicesByIds, extract shared row ma
 
 ---
 
-### Task 6: `getDecisionSessionId` + `getSessionWithDecisions`
+### Task 7: `getDecisionSessionId` + `getSessionWithDecisions`
 
 **Files:**
 - Modify: `lib/db/queries.ts`
 - Modify: `lib/db/queries.test.ts`
 
 **Interfaces:**
-- Consumes: `Level` from `lib/rules/types.ts`.
+- Consumes: `Level` from `lib/rules/types.ts`; `createSession` from `lib/sessions.ts` (Task 6, test-only).
 - Produces: `getDecisionSessionId(db, invoiceId): Promise<string | null>`,
   `getSessionWithDecisions(db, sessionId): Promise<BordereauSessionRow | null>` —
   consumed by Task 11 (Screen 2's "already decided" link) and Task 13 (Screen 4).
@@ -776,10 +776,10 @@ describe("getSessionWithDecisions", () => {
 - [ ] **Step 2: Run to verify they fail**
 
 Run: `npx vitest run lib/db/queries.test.ts`
-Expected: FAIL — `getDecisionSessionId`/`getSessionWithDecisions` are not exported, and
-`../sessions` doesn't exist yet (that's fine — Task 7 creates it right after; if you
-reach this task before Task 7, these two new tests will fail to even compile/import.
-This is expected and intentional given the plan's ordering — do not skip ahead).
+Expected: FAIL — `getDecisionSessionId`/`getSessionWithDecisions` are not exported.
+(`../sessions` already exists by this point — Task 6 created it — so this should be a
+clean "not exported" failure, not an import error. If you see an import error for
+`../sessions`, stop: Task 6 was not actually completed first.)
 
 - [ ] **Step 3: Add the functions to `lib/db/queries.ts`**
 
@@ -869,8 +869,7 @@ export async function getSessionWithDecisions(
 - [ ] **Step 4: Run to verify they pass**
 
 Run: `npx vitest run lib/db/queries.test.ts`
-Expected: PASS (this requires Task 7's `lib/sessions.ts` to already exist — if executing
-strictly in plan order, it will).
+Expected: PASS
 
 - [ ] **Step 5: Commit**
 
@@ -881,7 +880,7 @@ git commit -m "Add getDecisionSessionId and getSessionWithDecisions"
 
 ---
 
-### Task 7: `lib/sessions.ts` — the single place a session is created
+### Task 6: `lib/sessions.ts` — the single place a session is created
 
 **Files:**
 - Create: `lib/sessions.ts`
@@ -890,14 +889,9 @@ git commit -m "Add getDecisionSessionId and getSessionWithDecisions"
 **Interfaces:**
 - Produces: `DecisionInput`, `CreatedSession`,
   `createSession(db, kind, decisions): Promise<CreatedSession>`, `slug(value): string`,
-  `notificationEmail(entityName): string` — consumed by Task 8 (`app/actions/sign.ts`)
+  `notificationEmail(entityName): string` — consumed by Task 7 (`getSessionWithDecisions`'s
+  own tests call `createSession` to set up fixtures), Task 8 (`app/actions/sign.ts`),
   and Task 13 (Screen 4 re-derives notification lines via `notificationEmail`).
-
-Note: Task 6's tests already import from `./sessions` (or `../sessions`) — if executing
-tasks in order, this task must land before Task 6's tests can pass, but Task 6 is
-listed first in file order for query-layer cohesion. Follow the plan's task numbers for
-execution order regardless of read-order; Task 6's own verification step already notes
-this dependency.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1155,7 +1149,7 @@ git commit -m "Add lib/sessions.ts: the single place a session and its decisions
 - Create: `app/actions/sign.ts`
 
 **Interfaces:**
-- Consumes: `getInvoicesByIds`, `getClassification` (Task 5), `createSession` (Task 7).
+- Consumes: `getInvoicesByIds`, `getClassification` (Task 5), `createSession` (Task 6).
 - Produces: `createBatchSession(formData): Promise<void>`,
   `signSingleDecision(formData): Promise<void>` — consumed by Task 10 (dashboard sticky
   bar form), Task 11 (Screen 2's approve/reject form), Task 12 (Screen 3's sign form).
@@ -2000,7 +1994,7 @@ git commit -m "Add batch session review screen with removable list"
 - Create: `app/(app)/sessions/[id]/_components/print-button.tsx`
 
 **Interfaces:**
-- Consumes: `getSessionWithDecisions` (Task 6), `notificationEmail` (Task 7),
+- Consumes: `getSessionWithDecisions` (Task 7), `notificationEmail` (Task 6),
   `LevelBadge`/`Amount` (Task 3).
 - Produces: the bordereau screen — the terminal page of both signing flows.
 
