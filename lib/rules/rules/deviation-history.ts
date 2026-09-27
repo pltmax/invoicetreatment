@@ -1,0 +1,31 @@
+import type { InvoiceContext, Reason } from "../types";
+import { median } from "../stats";
+import { DEVIATION_ORANGE, DEVIATION_RED, HISTORY_SAMPLE } from "../thresholds";
+import { formatEuros, formatPercent } from "../../format";
+
+export default function deviationHistoryRule(ctx: InvoiceContext): Reason | null {
+  const sample = ctx.groupApprovedInvoices
+    .filter((i) => i.entityId === ctx.invoice.entityId && i.category === ctx.invoice.category)
+    .slice(0, HISTORY_SAMPLE)
+    .map((i) => i.amountExclVatCents);
+
+  const baseline = median(sample);
+  if (baseline === null || baseline === 0) return null;
+
+  const amount = ctx.invoice.amountExclVatCents;
+  const deviation = (amount - baseline) / baseline;
+  if (deviation <= DEVIATION_ORANGE) return null;
+
+  const message = `Montant ${formatEuros(amount)} HT, ${formatPercent(deviation)} au-dessus de l'historique (médiane ${formatEuros(baseline)} HT sur ${sample.length} factures)`;
+  const data = {
+    amountExclVatCents: amount,
+    medianExclVatCents: baseline,
+    deviationPct: deviation,
+    sampleCount: sample.length,
+  };
+
+  if (deviation > DEVIATION_RED) {
+    return { code: "DEVIATION_HISTORY_HIGH", level: "red", message, data };
+  }
+  return { code: "DEVIATION_HISTORY", level: "orange", message, data };
+}
