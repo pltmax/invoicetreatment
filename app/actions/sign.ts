@@ -4,7 +4,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db/client";
-import { getClassification, getInvoicesByIds } from "@/lib/db/queries";
+import { getClassification, getDecisionSessionId, getInvoicesByIds } from "@/lib/db/queries";
 import { createSession } from "@/lib/sessions";
 import { loadContext } from "@/lib/rules/context";
 
@@ -44,15 +44,28 @@ export async function signSingleDecision(formData: FormData): Promise<void> {
   const classification = await getClassification(db, invoiceId);
   const kind = classification?.level === "red" ? "single" : "batch";
 
-  const { sessionId } = await createSession(db, kind, [
-    {
-      invoiceId,
-      entityName: context.invoice.entityName,
-      amountInclVatCents: context.invoice.amountInclVatCents,
-      outcome,
-      comment,
-    },
-  ]);
+  let sessionId: string;
+  try {
+    const created = await createSession(db, kind, [
+      {
+        invoiceId,
+        entityName: context.invoice.entityName,
+        amountInclVatCents: context.invoice.amountInclVatCents,
+        outcome,
+        comment,
+      },
+    ]);
+    sessionId = created.sessionId;
+  } catch {
+    // Concurrent double-submit (double-click, or the same invoice open in two
+    // tabs): both requests' loadContext reads resolved "pending" before
+    // either wrote, so the second createSession here hits the
+    // decisions.invoice_id UNIQUE constraint. The other request already
+    // recorded a decision for this invoice — redirect to its session instead
+    // of letting the raw SQLite error propagate.
+    const existingSessionId = await getDecisionSessionId(db, invoiceId);
+    redirect(existingSessionId ? `/sessions/${existingSessionId}` : `/invoices/${invoiceId}`);
+  }
 
   redirect(`/sessions/${sessionId}`);
 }
