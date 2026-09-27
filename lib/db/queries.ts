@@ -1,5 +1,6 @@
 import "server-only";
 import type { Client } from "@libsql/client";
+import type { Level, Reason } from "../rules/types";
 
 export interface PendingInvoiceRow {
   id: string;
@@ -9,8 +10,8 @@ export interface PendingInvoiceRow {
   amountInclVatCents: number;
   dueDate: string;
   category: string;
-  level: "green" | "orange" | "red" | null;
-  reasonMessages: string[];
+  level: Level | null;
+  reasons: Reason[];
 }
 
 export async function getPendingInvoices(db: Client): Promise<PendingInvoiceRow[]> {
@@ -41,9 +42,7 @@ export async function getPendingInvoices(db: Client): Promise<PendingInvoiceRow[
     amountInclVatCents: Number(row.amountInclVatCents),
     dueDate: String(row.dueDate),
     category: String(row.category),
-    level: row.level === null ? null : (String(row.level) as "green" | "orange" | "red"),
-    reasonMessages: row.reasons
-      ? (JSON.parse(String(row.reasons)) as Array<{ message: string }>).map((r) => r.message)
-      : [],
+    level: row.level === null ? null : (String(row.level) as Level),
+    reasons: row.reasons ? (JSON.parse(String(row.reasons)) as Reason[]) : [],
   }));
 }

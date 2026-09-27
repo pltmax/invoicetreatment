@@ -32,7 +32,8 @@ describe("getPendingInvoices", () => {
     const rows = await getPendingInvoices(db);
     const novalink = rows.find((r) => r.invoiceNumber === "PEND-NOVALINK-01");
     expect(novalink?.level).toBe("green");
-    expect(novalink?.reasonMessages.length).toBeGreaterThan(0);
+    expect(novalink?.reasons.length).toBeGreaterThan(0);
+    expect(novalink?.reasons[0].code).toBe("ALL_CHECKS_PASSED");
 
     db.close();
   });
