@@ -14,7 +14,7 @@ export interface ExpectedClassification {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const VARIANCE = [0.97, 1.02, 0.98, 1.04, 0.96, 1.01, 0.99, 1.03, 0.95, 1.02, 0.97, 1.0];
+const VARIANCE = [0.97, 1.02, 0.98, 1.04, 0.96, 1.01, 0.99, 1.03, 0.95, 1.02, 0.97, 0.99];
 
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);

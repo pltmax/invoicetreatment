@@ -1,3 +1,6 @@
+import "server-only";
+
+export const SCHEMA_SQL = `
 DROP TABLE IF EXISTS decisions;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS classifications;
@@ -100,3 +103,4 @@ CREATE TABLE decisions (
 );
 
 CREATE INDEX idx_decisions_session ON decisions(session_id);
+`;

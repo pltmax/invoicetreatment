@@ -3,6 +3,8 @@ import { getPendingInvoices } from "@/lib/db/queries";
 import { expectedClassifications } from "@/lib/db/seed";
 import { resetDemo } from "@/app/actions/demo";
 
+export const dynamic = "force-dynamic";
+
 function formatEuros(cents: number): string {
   return (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
