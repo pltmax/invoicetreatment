@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import type { Client } from "@libsql/client";
+import type { Client, InValue } from "@libsql/client";
 import { generateValidSiren } from "../checks/siren";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
@@ -140,7 +140,7 @@ const TRANS_LOGISTIQUE = {
 
 interface WriteStatement {
   sql: string;
-  args: unknown[];
+  args: InValue[];
 }
 
 interface HistoryInvoice {
