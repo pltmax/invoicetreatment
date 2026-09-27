@@ -34,3 +34,7 @@ export function buildIban(countryCode: string, bban: string): string {
   const checkDigits = String(98 - remainder).padStart(2, "0");
   return `${countryCode}${checkDigits}${bban}`;
 }
+
+export function ibanCountryCode(iban: string): string {
+  return iban.replace(/\s+/g, "").toUpperCase().slice(0, 2);
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildIban, isValidIban } from "./iban";
+import { buildIban, isValidIban, ibanCountryCode } from "./iban";
 
 describe("iban", () => {
   it("builds a French IBAN with a valid mod-97 checksum", () => {
@@ -22,5 +22,13 @@ describe("iban", () => {
 
   it("rejects a malformed value", () => {
     expect(isValidIban("not-an-iban")).toBe(false);
+  });
+});
+
+describe("ibanCountryCode", () => {
+  it("extracts the two-letter country code, case- and whitespace-insensitive", () => {
+    expect(ibanCountryCode("FR7640100000000000001")).toBe("FR");
+    expect(ibanCountryCode("de1234")).toBe("DE");
+    expect(ibanCountryCode("FR76 4010 0000 0000 0000 1")).toBe("FR");
   });
 });
