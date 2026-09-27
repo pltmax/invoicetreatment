@@ -2,16 +2,15 @@ import { db } from "@/lib/db/client";
 import { getPendingInvoices } from "@/lib/db/queries";
 import { expectedClassifications } from "@/lib/db/seed";
 import { resetDemo } from "@/app/actions/demo";
+import { formatEuros, formatDateFr } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-function formatEuros(cents: number): string {
-  return (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR");
-}
+const LEVEL_COLOR: Record<string, string> = {
+  green: "bg-green-500",
+  orange: "bg-orange-500",
+  red: "bg-red-500",
+};
 
 export default async function Home() {
   const invoices = await getPendingInvoices(db);
@@ -34,6 +33,8 @@ export default async function Home() {
             <th className="border border-gray-300 p-2 text-left">Filiale</th>
             <th className="border border-gray-300 p-2 text-left">Montant TTC</th>
             <th className="border border-gray-300 p-2 text-left">Échéance</th>
+            <th className="border border-gray-300 p-2 text-left">Niveau</th>
+            <th className="border border-gray-300 p-2 text-left">Motifs</th>
             <th className="border border-gray-300 p-2 text-left">Scénario</th>
           </tr>
         </thead>
@@ -43,7 +44,20 @@ export default async function Home() {
               <td className="border border-gray-300 p-2">{invoice.supplierName}</td>
               <td className="border border-gray-300 p-2">{invoice.entityName}</td>
               <td className="border border-gray-300 p-2">{formatEuros(invoice.amountInclVatCents)}</td>
-              <td className="border border-gray-300 p-2">{formatDate(invoice.dueDate)}</td>
+              <td className="border border-gray-300 p-2">{formatDateFr(invoice.dueDate)}</td>
+              <td className="border border-gray-300 p-2">
+                {invoice.level && (
+                  <span
+                    className={`inline-block w-3 h-3 rounded-full ${LEVEL_COLOR[invoice.level]}`}
+                    title={invoice.level}
+                  />
+                )}
+              </td>
+              <td className="border border-gray-300 p-2">
+                {invoice.reasonMessages.map((message, index) => (
+                  <div key={index}>{message}</div>
+                ))}
+              </td>
               <td className="border border-gray-300 p-2">
                 {scenarioByInvoiceNumber.get(invoice.invoiceNumber) ?? "-"}
               </td>

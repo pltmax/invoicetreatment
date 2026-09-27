@@ -9,6 +9,8 @@ export interface PendingInvoiceRow {
   amountInclVatCents: number;
   dueDate: string;
   category: string;
+  level: "green" | "orange" | "red" | null;
+  reasonMessages: string[];
 }
 
 export async function getPendingInvoices(db: Client): Promise<PendingInvoiceRow[]> {
@@ -20,10 +22,13 @@ export async function getPendingInvoices(db: Client): Promise<PendingInvoiceRow[
       entities.name AS entityName,
       invoices.amount_incl_vat_cents AS amountInclVatCents,
       invoices.due_date AS dueDate,
-      invoices.category AS category
+      invoices.category AS category,
+      classifications.level AS level,
+      classifications.reasons AS reasons
     FROM invoices
     JOIN suppliers ON suppliers.id = invoices.supplier_id
     JOIN entities ON entities.id = invoices.entity_id
+    LEFT JOIN classifications ON classifications.invoice_id = invoices.id
     WHERE invoices.status = 'pending'
     ORDER BY invoices.due_date ASC
   `);
@@ -36,5 +41,9 @@ export async function getPendingInvoices(db: Client): Promise<PendingInvoiceRow[
     amountInclVatCents: Number(row.amountInclVatCents),
     dueDate: String(row.dueDate),
     category: String(row.category),
+    level: row.level === null ? null : (String(row.level) as "green" | "orange" | "red"),
+    reasonMessages: row.reasons
+      ? (JSON.parse(String(row.reasons)) as Array<{ message: string }>).map((r) => r.message)
+      : [],
   }));
 }

@@ -23,4 +23,17 @@ describe("getPendingInvoices", () => {
 
     db.close();
   });
+
+  it("includes the stored classification level and reason messages", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await getPendingInvoices(db);
+    const novalink = rows.find((r) => r.invoiceNumber === "PEND-NOVALINK-01");
+    expect(novalink?.level).toBe("green");
+    expect(novalink?.reasonMessages.length).toBeGreaterThan(0);
+
+    db.close();
+  });
 });
