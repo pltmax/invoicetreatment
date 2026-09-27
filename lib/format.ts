@@ -16,3 +16,7 @@ export function formatPercent(ratio: number): string {
 export function formatDateFr(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR");
 }
+
+export function formatIbanGrouped(iban: string): string {
+  return iban.replace(/\s+/g, "").match(/.{1,4}/g)?.join(" ") ?? iban;
+}

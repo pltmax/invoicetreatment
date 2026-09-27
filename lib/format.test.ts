@@ -1,6 +1,6 @@
 // lib/format.test.ts
 import { describe, it, expect } from "vitest";
-import { formatEuros, formatPercent, formatDateFr } from "./format";
+import { formatEuros, formatPercent, formatDateFr, formatIbanGrouped } from "./format";
 
 describe("formatEuros", () => {
   it("shows cents below 1 000 €", () => {
@@ -32,5 +32,11 @@ describe("formatPercent", () => {
 describe("formatDateFr", () => {
   it("formats an ISO date using the fr-FR locale", () => {
     expect(formatDateFr("2026-03-12")).toBe(new Date("2026-03-12").toLocaleDateString("fr-FR"));
+  });
+});
+
+describe("formatIbanGrouped", () => {
+  it("groups an IBAN into 4-character blocks", () => {
+    expect(formatIbanGrouped("FR1420041010050500013M02606")).toBe("FR14 2004 1010 0505 0001 3M02 606");
   });
 });
