@@ -45,6 +45,7 @@ export function buildContext(overrides: ContextOverrides = {}): InvoiceContext {
     printedIban: DEFAULT_IBAN,
     printedSiren: DEFAULT_SIREN,
     printedVatNumber: DEFAULT_VAT,
+    status: "pending",
     ...overrides.invoice,
   };
 
