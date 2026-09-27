@@ -68,9 +68,11 @@ CREATE TABLE invoices (
   category TEXT NOT NULL,
   amount_excl_vat_cents INTEGER NOT NULL,
   amount_incl_vat_cents INTEGER NOT NULL,
+  issue_date TEXT NOT NULL,
   due_date TEXT NOT NULL,
   printed_iban TEXT NOT NULL,
   printed_siren TEXT NOT NULL,
+  printed_vat_number TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -83,6 +85,7 @@ CREATE TABLE classifications (
   invoice_id TEXT NOT NULL UNIQUE REFERENCES invoices(id),
   level TEXT NOT NULL CHECK (level IN ('green', 'orange', 'red')),
   reasons TEXT NOT NULL,
+  rules_version TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

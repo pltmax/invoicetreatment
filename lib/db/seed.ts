@@ -4,6 +4,7 @@ import type { Client, InValue } from "@libsql/client";
 import { generateValidSiren } from "../checks/siren";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
+import { RULES_VERSION } from "../rules/thresholds";
 
 export type ClassificationLevel = "green" | "orange" | "red";
 
@@ -152,9 +153,11 @@ interface HistoryInvoice {
   category: string;
   amountExclVatCents: number;
   amountInclVatCents: number;
+  issueDate: string;
   dueDate: string;
   printedIban: string;
   printedSiren: string;
+  printedVatNumber: string;
   monthsAgo: number;
 }
 
@@ -167,6 +170,7 @@ function buildHistoryInvoices(
   baseAmountCents: number,
   registeredIban: string,
   registeredSiren: string,
+  registeredVatNumber: string,
   today: Date
 ): HistoryInvoice[] {
   const rows: HistoryInvoice[] = [];
@@ -182,9 +186,11 @@ function buildHistoryInvoices(
       category,
       amountExclVatCents: amount,
       amountInclVatCents: Math.round(amount * 1.2),
+      issueDate: isoDate(addDays(dueDate, -30)),
       dueDate: isoDate(dueDate),
       printedIban: registeredIban,
       printedSiren: registeredSiren,
+      printedVatNumber: registeredVatNumber,
       monthsAgo,
     });
   }
@@ -350,10 +356,11 @@ function buildPendingInvoiceStatements(
   for (const invoice of pending) {
     const supplier = supplierById.get(invoice.supplierId);
     if (!supplier) throw new Error(`unknown supplier ${invoice.supplierId}`);
+    const dueDate = addDays(today, invoice.dueInDays);
     statements.push({
       sql: `INSERT INTO invoices
-        (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, due_date, printed_iban, printed_siren, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+        (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, issue_date, due_date, printed_iban, printed_siren, printed_vat_number, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       args: [
         invoice.id,
         invoice.entityId,
@@ -363,9 +370,11 @@ function buildPendingInvoiceStatements(
         invoice.category,
         invoice.amountExclVatCents,
         Math.round(invoice.amountExclVatCents * 1.2),
-        isoDate(addDays(today, invoice.dueInDays)),
+        isoDate(addDays(dueDate, -30)),
+        isoDate(dueDate),
         invoice.printedIban ?? supplier.registeredIban,
         invoice.printedSiren ?? supplier.siren,
+        supplier.vatNumber,
       ],
     });
   }
@@ -462,6 +471,7 @@ export async function seed(db: Client): Promise<void> {
         contract.expectedAmountCents,
         supplier.registeredIban,
         supplier.siren,
+        supplier.vatNumber,
         today
       )
     );
@@ -479,6 +489,7 @@ export async function seed(db: Client): Promise<void> {
         TRANS_LOGISTIQUE.baseAmountCents,
         supplier.registeredIban,
         supplier.siren,
+        supplier.vatNumber,
         today
       )
     );
@@ -487,8 +498,8 @@ export async function seed(db: Client): Promise<void> {
   for (const invoice of historyInvoices) {
     statements.push({
       sql: `INSERT INTO invoices
-        (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, due_date, printed_iban, printed_siren, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+        (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, issue_date, due_date, printed_iban, printed_siren, printed_vat_number, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
       args: [
         invoice.id,
         invoice.entityId,
@@ -498,17 +509,20 @@ export async function seed(db: Client): Promise<void> {
         invoice.category,
         invoice.amountExclVatCents,
         invoice.amountInclVatCents,
+        invoice.issueDate,
         invoice.dueDate,
         invoice.printedIban,
         invoice.printedSiren,
+        invoice.printedVatNumber,
       ],
     });
     statements.push({
-      sql: "INSERT INTO classifications (id, invoice_id, level, reasons) VALUES (?, ?, 'green', ?)",
+      sql: "INSERT INTO classifications (id, invoice_id, level, reasons, rules_version) VALUES (?, ?, 'green', ?, ?)",
       args: [
         `cls-${invoice.id}`,
         invoice.id,
         JSON.stringify(["Fournisseur récurrent, historique conforme au contrat."]),
+        RULES_VERSION,
       ],
     });
   }

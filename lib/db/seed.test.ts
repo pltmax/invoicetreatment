@@ -94,3 +94,37 @@ describe("seed - pending scenarios", () => {
     db.close();
   });
 });
+
+describe("seed - schema additions", () => {
+  it("populates issue_date (before due_date) and printed_vat_number for every invoice", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await db.execute(
+      "SELECT issue_date as issueDate, printed_vat_number as printedVatNumber, due_date as dueDate FROM invoices"
+    );
+    expect(rows.rows.length).toBeGreaterThan(0);
+    for (const row of rows.rows) {
+      expect(row.issueDate).not.toBeNull();
+      expect(row.printedVatNumber).not.toBeNull();
+      expect(String(row.issueDate) < String(row.dueDate)).toBe(true);
+    }
+
+    db.close();
+  });
+
+  it("stamps every classification with the current rules version", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await db.execute("SELECT rules_version as rulesVersion FROM classifications");
+    expect(rows.rows.length).toBeGreaterThan(0);
+    for (const row of rows.rows) {
+      expect(row.rulesVersion).toBe("1.0.0");
+    }
+
+    db.close();
+  });
+});
