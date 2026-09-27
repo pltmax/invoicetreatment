@@ -2,7 +2,14 @@ import { describe, it, expect } from "vitest";
 import { createClient } from "@libsql/client";
 import { migrate } from "./migrate";
 import { seed } from "./seed";
-import { getPendingInvoices, getClassification, getInvoicesByIds } from "./queries";
+import {
+  getPendingInvoices,
+  getClassification,
+  getInvoicesByIds,
+  getDecisionSessionId,
+  getSessionWithDecisions,
+} from "./queries";
+import { createSession } from "../sessions";
 
 describe("getPendingInvoices", () => {
   it("returns all 13 pending invoices sorted by due date ascending", async () => {
@@ -86,6 +93,75 @@ describe("getInvoicesByIds", () => {
     await migrate(db);
     const result = await getInvoicesByIds(db, []);
     expect(result).toEqual([]);
+    db.close();
+  });
+});
+
+describe("getDecisionSessionId", () => {
+  it("returns null for an invoice with no decision yet", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+    const rows = await getPendingInvoices(db);
+    const sessionId = await getDecisionSessionId(db, rows[0].id);
+    expect(sessionId).toBeNull();
+    db.close();
+  });
+
+  it("returns the session id once a decision exists", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+    const rows = await getPendingInvoices(db);
+    const invoice = rows[0];
+    const created = await createSession(db, "batch", [
+      {
+        invoiceId: invoice.id,
+        entityName: invoice.entityName,
+        amountInclVatCents: invoice.amountInclVatCents,
+        outcome: "approved",
+        comment: null,
+      },
+    ]);
+    const sessionId = await getDecisionSessionId(db, invoice.id);
+    expect(sessionId).toBe(created.sessionId);
+    db.close();
+  });
+});
+
+describe("getSessionWithDecisions", () => {
+  it("returns the session header and every decision, joined to level and identity", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+    const rows = await getPendingInvoices(db);
+    const invoice = rows.find((r) => r.invoiceNumber === "PEND-NOVALINK-01")!;
+    const created = await createSession(db, "batch", [
+      {
+        invoiceId: invoice.id,
+        entityName: invoice.entityName,
+        amountInclVatCents: invoice.amountInclVatCents,
+        outcome: "approved",
+        comment: "Conforme au contrat.",
+      },
+    ]);
+
+    const session = await getSessionWithDecisions(db, created.sessionId);
+    expect(session?.kind).toBe("batch");
+    expect(session?.contentHash).toBe(created.contentHash);
+    expect(session?.decisions).toHaveLength(1);
+    expect(session?.decisions[0].invoiceNumber).toBe("PEND-NOVALINK-01");
+    expect(session?.decisions[0].level).toBe("green");
+    expect(session?.decisions[0].comment).toBe("Conforme au contrat.");
+
+    db.close();
+  });
+
+  it("returns null for a nonexistent session", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    const session = await getSessionWithDecisions(db, "does-not-exist");
+    expect(session).toBeNull();
     db.close();
   });
 });
