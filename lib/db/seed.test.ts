@@ -24,11 +24,12 @@ describe("seed - history", () => {
     const sessions = await db.execute("SELECT COUNT(*) as count FROM sessions");
     expect(Number(sessions.rows[0].count)).toBe(12);
 
-    // 11 contracts with hasHistory=true, x12 months, + 12 months for Trans Logistique (no contract).
+    // 11 contracts with hasHistory=true, x12 months, + 12 months for Trans Logistique (no contract),
+    // + 2 pending invoices (Novalink, CloudNimbus) that classifyAll() also classifies green.
     const greenClassifications = await db.execute(
       "SELECT COUNT(*) as count FROM classifications WHERE level = 'green'"
     );
-    expect(Number(greenClassifications.rows[0].count)).toBe(144);
+    expect(Number(greenClassifications.rows[0].count)).toBe(146);
 
     const greenwaveIbanRows = await db.execute({
       sql: "SELECT COUNT(*) as count FROM iban_history WHERE supplier_id = ?",

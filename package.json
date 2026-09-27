@@ -10,7 +10,8 @@
     "test": "vitest run",
     "db:migrate": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/migrate.ts",
     "db:seed": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/seed.ts",
-    "db:reset": "npm run db:migrate && npm run db:seed"
+    "db:reset": "npm run db:migrate && npm run db:seed",
+    "classify": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/classify.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",

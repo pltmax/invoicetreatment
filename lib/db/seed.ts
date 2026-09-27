@@ -5,6 +5,7 @@ import { generateValidSiren } from "../checks/siren";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
 import { RULES_VERSION } from "../rules/thresholds";
+import { classifyAll } from "../rules/classify-all";
 
 export type ClassificationLevel = "green" | "orange" | "red";
 
@@ -561,4 +562,6 @@ export async function seed(db: Client): Promise<void> {
     statements.map((s) => ({ sql: s.sql, args: s.args })),
     "write"
   );
+
+  await classifyAll(db, today);
 }
