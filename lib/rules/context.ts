@@ -77,6 +77,7 @@ export async function loadContext(
       args: [invoice.supplierId],
     },
     {
+      // Rules (deviation-history.ts's HISTORY_SAMPLE slice) depend on this DESC ordering to mean "most recent".
       sql: `
         SELECT invoices.entity_id AS entityId, entities.name AS entityName, invoices.category AS category,
                invoices.amount_excl_vat_cents AS amountExclVatCents, invoices.due_date AS dueDate

@@ -8,13 +8,14 @@ const DEFAULT_SIREN = generateValidSiren("55210055");
 const DEFAULT_VAT = computeVatNumber(DEFAULT_SIREN);
 const DEFAULT_IBAN = buildIban("FR", "40100000010000000001200");
 
+// Must stay newest-first, matching context.ts's real `ORDER BY due_date DESC`.
 const DEFAULT_HISTORY_DUE_DATES = [
-  "2025-10-15",
-  "2025-11-15",
-  "2025-12-15",
-  "2026-01-15",
-  "2026-02-15",
   "2026-03-15",
+  "2026-02-15",
+  "2026-01-15",
+  "2025-12-15",
+  "2025-11-15",
+  "2025-10-15",
 ];
 
 interface ContextOverrides {

@@ -3,13 +3,20 @@ import { getPendingInvoices } from "@/lib/db/queries";
 import { expectedClassifications } from "@/lib/db/seed";
 import { resetDemo } from "@/app/actions/demo";
 import { formatEuros, formatDateFr } from "@/lib/format";
+import type { Level } from "@/lib/rules/types";
 
 export const dynamic = "force-dynamic";
 
-const LEVEL_COLOR: Record<string, string> = {
+const LEVEL_COLOR: Record<Level, string> = {
   green: "bg-green-500",
   orange: "bg-orange-500",
   red: "bg-red-500",
+};
+
+const LEVEL_LABEL: Record<Level, string> = {
+  green: "Vert",
+  orange: "Orange",
+  red: "Rouge",
 };
 
 export default async function Home() {
@@ -49,7 +56,7 @@ export default async function Home() {
                 {invoice.level && (
                   <span
                     className={`inline-block w-3 h-3 rounded-full ${LEVEL_COLOR[invoice.level]}`}
-                    title={invoice.level}
+                    title={LEVEL_LABEL[invoice.level]}
                   />
                 )}
               </td>

@@ -523,7 +523,14 @@ export async function seed(db: Client): Promise<void> {
       args: [
         `cls-${invoice.id}`,
         invoice.id,
-        JSON.stringify(["Fournisseur récurrent, historique conforme au contrat."]),
+        JSON.stringify([
+          {
+            code: "ALL_CHECKS_PASSED",
+            level: "green",
+            message: "Fournisseur récurrent, historique conforme au contrat.",
+            data: {},
+          },
+        ]),
         RULES_VERSION,
       ],
     });

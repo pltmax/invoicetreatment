@@ -4,6 +4,7 @@ import { DEVIATION_ORANGE, DEVIATION_RED, HISTORY_SAMPLE } from "../thresholds";
 import { formatEuros, formatPercent } from "../../format";
 
 export default function deviationHistoryRule(ctx: InvoiceContext): Reason | null {
+  // Depends on groupApprovedInvoices being ordered newest-first (see context.ts's ORDER BY due_date DESC).
   const sample = ctx.groupApprovedInvoices
     .filter((i) => i.entityId === ctx.invoice.entityId && i.category === ctx.invoice.category)
     .slice(0, HISTORY_SAMPLE)
