@@ -13,6 +13,7 @@ export interface ExpectedClassification {
   invoiceNumber: string;
   scenario: string;
   expectedLevel: ClassificationLevel;
+  expectedCode: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -384,19 +385,19 @@ function buildPendingInvoiceStatements(
 }
 
 export const expectedClassifications: ExpectedClassification[] = [
-  { invoiceNumber: "PEND-NOVALINK-01", scenario: "Maintenance télécom récurrente conforme au contrat", expectedLevel: "green" },
-  { invoiceNumber: "PEND-CLOUDNIMBUS-01", scenario: "Hébergement cloud récurrent conforme au contrat", expectedLevel: "green" },
-  { invoiceNumber: "PEND-FONTAINE-01", scenario: "Fournisseur connu, +20% vs historique", expectedLevel: "orange" },
-  { invoiceNumber: "PEND-PIXELFORGE-01", scenario: "Nouveau fournisseur, 3 000 € HT", expectedLevel: "orange" },
-  { invoiceNumber: "PEND-TRANSLOGISTIQUE-01", scenario: "Fournisseur connu, aucun contrat associé", expectedLevel: "orange" },
-  { invoiceNumber: "PEND-KLAXON-01", scenario: "Catégorie inhabituelle pour la filiale télécom", expectedLevel: "orange" },
-  { invoiceNumber: "HIST-AQUA-REALESTATE-M6", scenario: "Même fournisseur et même numéro de facture qu'une facture déjà approuvée", expectedLevel: "red" },
-  { invoiceNumber: "PEND-GREENWAVE-01", scenario: "IBAN enregistré du fournisseur modifié il y a 5 jours", expectedLevel: "red" },
-  { invoiceNumber: "PEND-MERIDIAN-01", scenario: "Fournisseur FR avec un IBAN imprimé étranger", expectedLevel: "red" },
-  { invoiceNumber: "PEND-ONDINE-01", scenario: "SIREN imprimé différent du registre", expectedLevel: "red" },
-  { invoiceNumber: "PEND-ATLAS-01", scenario: "Achat d'équipement de 80 000 € HT", expectedLevel: "red" },
-  { invoiceNumber: "PEND-SOLSTICE-01", scenario: "Même fournisseur et catégorie, filiale facturée 2x plus qu'une autre", expectedLevel: "red" },
-  { invoiceNumber: "PEND-CORVUS-01", scenario: "Fournisseur avec un événement de risque il y a 2 mois", expectedLevel: "red" },
+  { invoiceNumber: "PEND-NOVALINK-01", scenario: "Maintenance télécom récurrente conforme au contrat", expectedLevel: "green", expectedCode: "ALL_CHECKS_PASSED" },
+  { invoiceNumber: "PEND-CLOUDNIMBUS-01", scenario: "Hébergement cloud récurrent conforme au contrat", expectedLevel: "green", expectedCode: "ALL_CHECKS_PASSED" },
+  { invoiceNumber: "PEND-FONTAINE-01", scenario: "Fournisseur connu, +20% vs historique", expectedLevel: "orange", expectedCode: "DEVIATION_HISTORY" },
+  { invoiceNumber: "PEND-PIXELFORGE-01", scenario: "Nouveau fournisseur, 3 000 € HT", expectedLevel: "orange", expectedCode: "NEW_SUPPLIER_SMALL" },
+  { invoiceNumber: "PEND-TRANSLOGISTIQUE-01", scenario: "Fournisseur connu, aucun contrat associé", expectedLevel: "orange", expectedCode: "NO_CONTRACT" },
+  { invoiceNumber: "PEND-KLAXON-01", scenario: "Catégorie inhabituelle pour la filiale télécom", expectedLevel: "orange", expectedCode: "UNUSUAL_CATEGORY" },
+  { invoiceNumber: "HIST-AQUA-REALESTATE-M6", scenario: "Même fournisseur et même numéro de facture qu'une facture déjà approuvée", expectedLevel: "red", expectedCode: "DUPLICATE_NUMBER" },
+  { invoiceNumber: "PEND-GREENWAVE-01", scenario: "IBAN enregistré du fournisseur modifié il y a 5 jours", expectedLevel: "red", expectedCode: "IBAN_RECENTLY_CHANGED" },
+  { invoiceNumber: "PEND-MERIDIAN-01", scenario: "Fournisseur FR avec un IBAN imprimé étranger", expectedLevel: "red", expectedCode: "IBAN_FOREIGN" },
+  { invoiceNumber: "PEND-ONDINE-01", scenario: "SIREN imprimé différent du registre", expectedLevel: "red", expectedCode: "IDENTITY_MISMATCH" },
+  { invoiceNumber: "PEND-ATLAS-01", scenario: "Achat d'équipement de 80 000 € HT", expectedLevel: "red", expectedCode: "EXCEPTIONAL_AMOUNT" },
+  { invoiceNumber: "PEND-SOLSTICE-01", scenario: "Même fournisseur et catégorie, filiale facturée 2x plus qu'une autre", expectedLevel: "red", expectedCode: "DEVIATION_PEER_HIGH" },
+  { invoiceNumber: "PEND-CORVUS-01", scenario: "Fournisseur avec un événement de risque il y a 2 mois", expectedLevel: "red", expectedCode: "SUPPLIER_RISK" },
 ];
 
 export async function seed(db: Client): Promise<void> {
