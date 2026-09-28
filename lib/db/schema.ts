@@ -1,6 +1,7 @@
 import "server-only";
 
 export const SCHEMA_SQL = `
+DROP TABLE IF EXISTS thresholds;
 DROP TABLE IF EXISTS decisions;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS classifications;
@@ -10,6 +11,20 @@ DROP TABLE IF EXISTS risk_events;
 DROP TABLE IF EXISTS iban_history;
 DROP TABLE IF EXISTS suppliers;
 DROP TABLE IF EXISTS entities;
+
+CREATE TABLE thresholds (
+  id TEXT PRIMARY KEY,
+  deviation_orange REAL NOT NULL,
+  deviation_red REAL NOT NULL,
+  new_supplier_amount_cents INTEGER NOT NULL,
+  exceptional_amount_cents INTEGER NOT NULL,
+  iban_recent_change_days INTEGER NOT NULL,
+  risk_window_months INTEGER NOT NULL,
+  duplicate_window_days INTEGER NOT NULL,
+  recurring_min_invoices INTEGER NOT NULL,
+  history_sample INTEGER NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 
 CREATE TABLE entities (
   id TEXT PRIMARY KEY,

@@ -3,7 +3,7 @@ import { createClient } from "@libsql/client";
 import { migrate } from "./migrate";
 
 describe("migrate", () => {
-  it("creates all nine tables", async () => {
+  it("creates all ten tables", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
 
@@ -22,6 +22,7 @@ describe("migrate", () => {
       "risk_events",
       "sessions",
       "suppliers",
+      "thresholds",
     ]);
 
     db.close();
