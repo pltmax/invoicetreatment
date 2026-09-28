@@ -17,7 +17,17 @@ export async function GET(
     return new NextResponse(null, { status: 404 });
   }
 
-  const result = await get(pathname, { access: "private" });
+  // get() throws (rather than returning null) on credential/config failures,
+  // e.g. a missing BLOB_READ_WRITE_TOKEN. Without this the caller would get
+  // Next.js's HTML 500 page inside an iframe that expects a PDF.
+  let result;
+  try {
+    result = await get(pathname, { access: "private" });
+  } catch (err) {
+    console.error(`Failed to fetch PDF blob for invoice ${id}:`, err);
+    return new NextResponse(null, { status: 502 });
+  }
+
   if (!result || result.statusCode !== 200) {
     return new NextResponse(null, { status: 404 });
   }

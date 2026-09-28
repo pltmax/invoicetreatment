@@ -84,7 +84,10 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
               <td className="py-2 pr-4 text-gray-900">{decision.outcome === "approved" ? "Approuvée" : "Rejetée"}</td>
               <td className="py-2 pr-4 text-gray-600">{decision.comment ?? "—"}</td>
               <td className="no-print py-2">
-                <ViewPdfButton invoiceId={decision.invoiceId} className="text-sm text-blue-600 underline" />
+                <ViewPdfButton
+                  invoiceId={decision.invoiceId}
+                  className="inline-flex min-h-[44px] items-center whitespace-nowrap text-sm text-blue-600 underline"
+                />
               </td>
             </tr>
           ))}
@@ -95,7 +98,10 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
             <td className="py-2 pr-4 text-right">
               <Amount cents={total} />
             </td>
-            <td colSpan={4} />
+            {/* Niveau + Décision + Commentaire; the PDF column is no-print, so
+                its spacer is split out to keep the printed row at 7 columns. */}
+            <td colSpan={3} />
+            <td className="no-print" />
           </tr>
         </tbody>
       </table>

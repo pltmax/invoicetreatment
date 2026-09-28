@@ -4,3 +4,6 @@
 // (it makes React resolve to its react-server build, which @react-pdf's
 // reconciler cannot use), so tsconfig.seed.json maps `server-only` here
 // instead. The app itself keeps the real guard.
+//
+// Note: vitest.config.ts solves this same underlying conflict the opposite way
+// (keep the react-server condition, alias "react" past it) — see its comment.

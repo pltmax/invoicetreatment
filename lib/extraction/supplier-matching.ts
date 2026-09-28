@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
-import { generateValidSiren } from "../checks/siren";
+import { generateValidSiren, isValidSiren } from "../checks/siren";
 import { generateValidSiret } from "../checks/siret";
 import type { ExtractedInvoice } from "./schema";
 
@@ -30,15 +30,20 @@ export async function resolveSupplierId(db: Client, extracted: ExtractedInvoice)
   const oneYearBeforeIssue = new Date(extracted.issueDate);
   oneYearBeforeIssue.setFullYear(oneYearBeforeIssue.getFullYear() - 1);
 
-  // Generate a synthetic valid SIREN/SIRET independent of the extracted data.
-  // This ensures the SIRET is always valid regardless of PDF extraction quality,
-  // while printed_siren (which may be invalid) is still stored for audit/comparison.
+  // A SIRET is SIREN + 5-digit NIC, so it must stay consistent with the siren
+  // column stored next to it. When the extracted SIREN is Luhn-valid, derive the
+  // SIRET from it. Otherwise fall back to a synthetic valid SIREN, since
+  // generateValidSiret throws on an invalid SIREN and PDF extraction quality is
+  // not guaranteed; the (possibly invalid) printed SIREN is still stored as-is
+  // for audit/comparison.
   const uuidHash = randomUUID().replace(/-/g, "");
   // Convert first 8 hex chars to a number, then to 8 decimal digits
   const hashNum = parseInt(uuidHash.slice(0, 8), 16);
   const syntheticBase8 = String(hashNum % 100000000).padStart(8, "0");
-  const syntheticSiren = generateValidSiren(syntheticBase8);
-  const syntheticSiret = generateValidSiret(syntheticSiren);
+  const baseSiren = isValidSiren(extracted.printedSiren)
+    ? extracted.printedSiren
+    : generateValidSiren(syntheticBase8);
+  const siret = generateValidSiret(baseSiren);
 
   await db.batch(
     [
@@ -48,7 +53,7 @@ export async function resolveSupplierId(db: Client, extracted: ExtractedInvoice)
           supplierId,
           extracted.supplierName,
           extracted.printedSiren,
-          syntheticSiret,
+          siret,
           extracted.printedVatNumber,
         ],
       },

@@ -26,8 +26,11 @@ describe("storeInvoicePdf", () => {
     const pdf = Buffer.from("%PDF-fake");
     await storeInvoicePdf(db, "inv-pending-novalink", pdf);
 
+    // allowOverwrite keeps `npm run seed` idempotent: the same deterministic
+    // pathname is re-uploaded on every reseed.
     expect(putMock).toHaveBeenCalledWith("invoices/inv-pending-novalink.pdf", pdf, {
       access: "private",
+      allowOverwrite: true,
     });
 
     const pathname = await getInvoicePdfPathname(db, "inv-pending-novalink");

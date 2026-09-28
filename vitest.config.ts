@@ -24,9 +24,19 @@ export default defineConfig({
     // needs the full client build. Alias "react" past the conditions-based
     // export lookup so it always resolves to the full build, while leaving
     // the "react-server" condition in place for every other package.
+    //
+    // Note: scripts/server-only-noop.ts + tsconfig.seed.json solve this same
+    // underlying conflict the opposite way (drop the condition, alias
+    // "server-only" instead) because Node scripts can't alias "react" here.
     conditions: ["react-server"],
-    alias: {
-      react: fileURLToPath(new URL("./node_modules/react/index.js", import.meta.url)),
-    },
+    // Array/regex form so the match is exact: with the plain object form,
+    // @rollup/plugin-alias also rewrites "react/jsx-runtime" (prefix match)
+    // to a nonexistent ".../react/index.js/jsx-runtime".
+    alias: [
+      {
+        find: /^react$/,
+        replacement: fileURLToPath(new URL("./node_modules/react/index.js", import.meta.url)),
+      },
+    ],
   },
 });

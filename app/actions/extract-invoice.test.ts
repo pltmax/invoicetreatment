@@ -8,6 +8,7 @@ import { migrate } from "../../lib/db/migrate";
 import { seed } from "../../lib/db/seed";
 import { resolveSupplierId, findContractId } from "../../lib/extraction/supplier-matching";
 import { generateValidSiren } from "../../lib/checks/siren";
+import { isValidSiret } from "../../lib/checks/siret";
 import type { ExtractedInvoice } from "../../lib/extraction/schema";
 
 function fixture(overrides: Partial<ExtractedInvoice> = {}): ExtractedInvoice {
@@ -95,6 +96,35 @@ describe("resolveSupplierId", () => {
     });
     expect(ibanRows.rows).toHaveLength(1);
     expect(ibanRows.rows[0].effectiveFrom).toBe("2025-06-15");
+
+    db.close();
+  });
+
+  it("derives the SIRET from a Luhn-valid printed SIREN so siret starts with siren", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const printedSiren = generateValidSiren("99999999");
+    const supplierId = await resolveSupplierId(
+      db,
+      fixture({
+        supplierName: "Supplier With Good SIREN",
+        printedSiren,
+        printedIban: "FR9999999999999999999999999",
+        issueDate: "2026-06-15",
+      })
+    );
+
+    const supplierRow = await db.execute({
+      sql: "SELECT siren, siret FROM suppliers WHERE id = ?",
+      args: [supplierId],
+    });
+    expect(supplierRow.rows[0].siren).toBe(printedSiren);
+    const siret = String(supplierRow.rows[0].siret);
+    expect(siret).toMatch(/^\d{14}$/);
+    expect(siret.startsWith(printedSiren)).toBe(true);
+    expect(isValidSiret(siret)).toBe(true);
 
     db.close();
   });
