@@ -10,6 +10,7 @@ import {
   getSessionWithDecisions,
   getInboxInvoices,
   getNotifications,
+  getThresholds,
 } from "./queries";
 import { createSession } from "../sessions";
 
@@ -220,6 +221,23 @@ describe("getNotifications", () => {
     expect(notifications[0].entityName).toBe("Arcadia Télécom");
     expect(notifications[0].level).toBe("green");
     expect(notifications[0].outcome).toBe("approved");
+
+    db.close();
+  });
+});
+
+describe("getThresholds", () => {
+  it("returns the seeded default thresholds", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const thresholds = await getThresholds(db);
+    expect(thresholds.deviationOrange).toBe(0.15);
+    expect(thresholds.deviationRed).toBe(0.4);
+    expect(thresholds.exceptionalAmountCents).toBe(50_000_00);
+    expect(thresholds.newSupplierAmountCents).toBe(5_000_00);
+    expect(thresholds.historySample).toBe(6);
 
     db.close();
   });

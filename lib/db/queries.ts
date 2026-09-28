@@ -1,6 +1,7 @@
 import "server-only";
 import type { Client } from "@libsql/client";
 import type { Level, Reason } from "../rules/types";
+import type { Thresholds } from "../rules/thresholds";
 import { SEED_HISTORY_SESSION_PREFIX } from "./seed";
 
 export interface PendingInvoiceRow {
@@ -265,4 +266,25 @@ export async function getInvoicesByIds(db: Client, ids: string[]): Promise<Pendi
   });
 
   return result.rows.map(mapPendingInvoiceRow);
+}
+
+export async function getThresholds(db: Client): Promise<Thresholds> {
+  const result = await db.execute(
+    "SELECT deviation_orange AS deviationOrange, deviation_red AS deviationRed, new_supplier_amount_cents AS newSupplierAmountCents, exceptional_amount_cents AS exceptionalAmountCents, iban_recent_change_days AS ibanRecentChangeDays, risk_window_months AS riskWindowMonths, duplicate_window_days AS duplicateWindowDays, recurring_min_invoices AS recurringMinInvoices, history_sample AS historySample FROM thresholds WHERE id = 'default'"
+  );
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error("thresholds row not found — did seed() run?");
+  }
+  return {
+    deviationOrange: Number(row.deviationOrange),
+    deviationRed: Number(row.deviationRed),
+    newSupplierAmountCents: Number(row.newSupplierAmountCents),
+    exceptionalAmountCents: Number(row.exceptionalAmountCents),
+    ibanRecentChangeDays: Number(row.ibanRecentChangeDays),
+    riskWindowMonths: Number(row.riskWindowMonths),
+    duplicateWindowDays: Number(row.duplicateWindowDays),
+    recurringMinInvoices: Number(row.recurringMinInvoices),
+    historySample: Number(row.historySample),
+  };
 }
