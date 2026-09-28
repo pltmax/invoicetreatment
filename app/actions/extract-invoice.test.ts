@@ -40,7 +40,7 @@ describe("resolveSupplierId", () => {
     expect(supplierId).toBe("sup-novalink");
 
     const count = await db.execute("SELECT COUNT(*) as n FROM suppliers");
-    expect(Number(count.rows[0].n)).toBe(13);
+    expect(Number(count.rows[0].n)).toBe(16);
 
     db.close();
   });

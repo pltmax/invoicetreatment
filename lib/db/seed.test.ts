@@ -11,7 +11,7 @@ describe("seed - history", () => {
     await seed(db);
 
     const suppliers = await db.execute("SELECT COUNT(*) as count FROM suppliers");
-    expect(Number(suppliers.rows[0].count)).toBe(13);
+    expect(Number(suppliers.rows[0].count)).toBe(16);
 
     const contracts = await db.execute("SELECT COUNT(*) as count FROM contracts");
     expect(Number(contracts.rows[0].count)).toBe(12);
@@ -23,14 +23,15 @@ describe("seed - history", () => {
     expect(Number(approvedNovalink.rows[0].count)).toBe(12);
 
     const sessions = await db.execute("SELECT COUNT(*) as count FROM sessions");
-    expect(Number(sessions.rows[0].count)).toBe(12);
+    expect(Number(sessions.rows[0].count)).toBe(13);
 
     // 11 contracts with hasHistory=true, x12 months, + 12 months for Trans Logistique (no contract),
+    // + 3 dedicated invoices for the extra 2026-09-26 session,
     // + 2 pending invoices (Novalink, CloudNimbus) that classifyAll() also classifies green.
     const greenClassifications = await db.execute(
       "SELECT COUNT(*) as count FROM classifications WHERE level = 'green'"
     );
-    expect(Number(greenClassifications.rows[0].count)).toBe(146);
+    expect(Number(greenClassifications.rows[0].count)).toBe(149);
 
     const greenwaveIbanRows = await db.execute({
       sql: "SELECT COUNT(*) as count FROM iban_history WHERE supplier_id = ?",
@@ -53,7 +54,7 @@ describe("seed - history", () => {
     await seed(db);
 
     const rows = await db.execute("SELECT siren, siret FROM suppliers");
-    expect(rows.rows.length).toBe(13);
+    expect(rows.rows.length).toBe(16);
     for (const row of rows.rows) {
       const siren = String(row.siren);
       const siret = String(row.siret);

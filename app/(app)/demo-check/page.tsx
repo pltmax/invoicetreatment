@@ -33,6 +33,9 @@ export default async function DemoCheckPage() {
   });
   const decisionsCount = Number(decisionsResult.rows[0].count);
 
+  const sessionsResult = await db.execute("SELECT COUNT(*) as count FROM sessions");
+  const sessionsCount = Number(sessionsResult.rows[0].count);
+
   const checks: Check[] = [
     {
       label: "13 factures en attente",
@@ -48,6 +51,11 @@ export default async function DemoCheckPage() {
       label: "Aucune session de décision existante",
       pass: decisionsCount === 0,
       detail: `${decisionsCount} décision${decisionsCount === 1 ? "" : "s"} enregistrée${decisionsCount === 1 ? "" : "s"}`,
+    },
+    {
+      label: "Au moins une session existe",
+      pass: sessionsCount >= 1,
+      detail: `${sessionsCount} session${sessionsCount === 1 ? "" : "s"} enregistrée${sessionsCount === 1 ? "" : "s"}`,
     },
   ];
 

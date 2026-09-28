@@ -160,6 +160,34 @@ export async function getSessionWithDecisions(
   };
 }
 
+export interface SessionSummaryRow {
+  id: string;
+  kind: "batch" | "single";
+  signedAt: string;
+  decisionCount: number;
+}
+
+export async function listSessions(db: Client): Promise<SessionSummaryRow[]> {
+  const result = await db.execute(`
+    SELECT
+      sessions.id AS id,
+      sessions.kind AS kind,
+      sessions.signed_at AS signedAt,
+      COUNT(decisions.id) AS decisionCount
+    FROM sessions
+    LEFT JOIN decisions ON decisions.session_id = sessions.id
+    GROUP BY sessions.id
+    ORDER BY sessions.signed_at DESC
+  `);
+
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    kind: String(row.kind) as "batch" | "single",
+    signedAt: String(row.signedAt),
+    decisionCount: Number(row.decisionCount),
+  }));
+}
+
 export interface InboxInvoiceRow {
   id: string;
   invoiceNumber: string;

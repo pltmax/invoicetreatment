@@ -589,6 +589,132 @@ export async function seed(db: Client): Promise<void> {
     }
   }
 
+  // A dedicated historical session (2026-09-26, distinct from the 12 monthly
+  // backfill sessions above) so the "Previous sessions" list has a recent,
+  // realistically-shaped entry alongside the older ones. Uses 3 suppliers of
+  // its own (rather than reusing any of the 13 demo suppliers) so it doesn't
+  // perturb the deviation/history/duplicate context the pending demo
+  // invoices are engineered against — loadContext() pulls "all invoices for
+  // this supplier_id" regardless of date, so an extra approved invoice on an
+  // existing supplier would change what classifyAll() produces for it.
+  {
+    const extraSupplierSeeds: SupplierSeed[] = [
+      { id: "sup-extra-orion", name: "Orion Facilities Conseil", base8: "40000014", bbanIndex: 14 },
+      { id: "sup-extra-selency", name: "Selency Data Systems", base8: "40000015", bbanIndex: 15 },
+      { id: "sup-extra-vesta", name: "Vesta Formation Pro", base8: "40000016", bbanIndex: 16 },
+    ];
+    const extraSuppliers = extraSupplierSeeds.map((s) => {
+      const siren = generateValidSiren(s.base8);
+      return {
+        id: s.id,
+        name: s.name,
+        siren,
+        siret: generateValidSiret(siren),
+        vatNumber: computeVatNumber(siren),
+        registeredIban: frenchIban(s.bbanIndex),
+      };
+    });
+
+    for (const supplier of extraSuppliers) {
+      statements.push({
+        sql: "INSERT INTO suppliers (id, name, siren, siret, vat_number) VALUES (?, ?, ?, ?, ?)",
+        args: [supplier.id, supplier.name, supplier.siren, supplier.siret, supplier.vatNumber],
+      });
+      statements.push({
+        sql: "INSERT INTO iban_history (id, supplier_id, iban, effective_from) VALUES (?, ?, ?, ?)",
+        args: [`ibh-${supplier.id}-orig`, supplier.id, supplier.registeredIban, isoDate(monthsBefore(today, 30))],
+      });
+    }
+
+    const extraInvoiceSeeds = [
+      { id: "inv-hist-extra-orion", entityId: "ent-telecom", supplierId: "sup-extra-orion", invoiceNumber: "SES-2026-09-26-ORION-01", category: "audit", amountExclVatCents: 95000 },
+      { id: "inv-hist-extra-selency", entityId: "ent-media", supplierId: "sup-extra-selency", invoiceNumber: "SES-2026-09-26-SELENCY-01", category: "training", amountExclVatCents: 140000 },
+      { id: "inv-hist-extra-vesta", entityId: "ent-realestate", supplierId: "sup-extra-vesta", invoiceNumber: "SES-2026-09-26-VESTA-01", category: "insurance", amountExclVatCents: 60000 },
+    ];
+
+    const extraSupplierById = new Map(extraSuppliers.map((s) => [s.id, s]));
+    const extraInvoices = extraInvoiceSeeds.map((seed) => {
+      const supplier = extraSupplierById.get(seed.supplierId);
+      if (!supplier) throw new Error(`unknown supplier ${seed.supplierId}`);
+      return {
+        ...seed,
+        contractId: null as string | null,
+        amountInclVatCents: Math.round(seed.amountExclVatCents * 1.2),
+        issueDate: "2026-08-26",
+        dueDate: "2026-09-26",
+        printedIban: supplier.registeredIban,
+        printedSiren: supplier.siren,
+        printedVatNumber: supplier.vatNumber,
+      };
+    });
+
+    for (const invoice of extraInvoices) {
+      statements.push({
+        sql: `INSERT INTO invoices
+          (id, entity_id, supplier_id, contract_id, invoice_number, category, amount_excl_vat_cents, amount_incl_vat_cents, issue_date, due_date, printed_iban, printed_siren, printed_vat_number, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')`,
+        args: [
+          invoice.id,
+          invoice.entityId,
+          invoice.supplierId,
+          invoice.contractId,
+          invoice.invoiceNumber,
+          invoice.category,
+          invoice.amountExclVatCents,
+          invoice.amountInclVatCents,
+          invoice.issueDate,
+          invoice.dueDate,
+          invoice.printedIban,
+          invoice.printedSiren,
+          invoice.printedVatNumber,
+        ],
+      });
+      statements.push({
+        sql: "INSERT INTO classifications (id, invoice_id, level, reasons, rules_version) VALUES (?, ?, 'green', ?, ?)",
+        args: [
+          `cls-${invoice.id}`,
+          invoice.id,
+          JSON.stringify([
+            {
+              code: "ALL_CHECKS_PASSED",
+              level: "green",
+              message: "Aucune anomalie détectée.",
+              data: {},
+            },
+          ]),
+          RULES_VERSION,
+        ],
+      });
+    }
+
+    const extraSessionId = `${SEED_HISTORY_SESSION_PREFIX}2026-09-26`;
+    const extraSignedAt = "2026-09-26T09:00:00.000Z";
+    const extraContentHash = sha256Hex(
+      JSON.stringify({
+        sessionId: extraSessionId,
+        kind: "batch",
+        decisions: [...extraInvoices]
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map((i) => ({
+            invoiceId: i.id,
+            amountInclVatCents: i.amountInclVatCents,
+            outcome: "approved",
+          })),
+        signedAt: extraSignedAt,
+      })
+    );
+    statements.push({
+      sql: "INSERT INTO sessions (id, kind, content_hash, signature_ref, signed_at) VALUES (?, 'batch', ?, ?, ?)",
+      args: [extraSessionId, extraContentHash, `MOCK-YOUSIGN-${extraSessionId}`, extraSignedAt],
+    });
+    for (const invoice of extraInvoices) {
+      statements.push({
+        sql: "INSERT INTO decisions (id, session_id, invoice_id, outcome) VALUES (?, ?, ?, 'approved')",
+        args: [`dec-${invoice.id}`, extraSessionId, invoice.id],
+      });
+    }
+  }
+
   statements.push(...buildPendingInvoiceStatements(today, supplierById));
 
   await db.batch(
