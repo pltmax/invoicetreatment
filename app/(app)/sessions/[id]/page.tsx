@@ -5,6 +5,7 @@ import { notificationEmail } from "@/lib/sessions";
 import { Amount } from "@/components/amount";
 import { LevelBadge } from "@/components/level-badge";
 import { formatDateTimeFr } from "@/lib/format";
+import { ViewPdfButton } from "@/components/view-pdf-button";
 import { CopyHashButton } from "./_components/copy-hash-button";
 import { PrintButton } from "./_components/print-button";
 
@@ -66,7 +67,8 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
             <th className="py-2 pr-4 text-right font-normal">Montant</th>
             <th className="py-2 pr-4 font-normal">Niveau</th>
             <th className="py-2 pr-4 font-normal">Décision</th>
-            <th className="py-2 font-normal">Commentaire</th>
+            <th className="py-2 pr-4 font-normal">Commentaire</th>
+            <th className="no-print py-2 font-normal">PDF</th>
           </tr>
         </thead>
         <tbody>
@@ -80,7 +82,10 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
               </td>
               <td className="py-2 pr-4">{decision.level && <LevelBadge level={decision.level} />}</td>
               <td className="py-2 pr-4 text-gray-900">{decision.outcome === "approved" ? "Approuvée" : "Rejetée"}</td>
-              <td className="py-2 text-gray-600">{decision.comment ?? "—"}</td>
+              <td className="py-2 pr-4 text-gray-600">{decision.comment ?? "—"}</td>
+              <td className="no-print py-2">
+                <ViewPdfButton invoiceId={decision.invoiceId} className="text-sm text-blue-600 underline" />
+              </td>
             </tr>
           ))}
           <tr className="font-medium text-gray-900">
@@ -90,7 +95,7 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
             <td className="py-2 pr-4 text-right">
               <Amount cents={total} />
             </td>
-            <td colSpan={3} />
+            <td colSpan={4} />
           </tr>
         </tbody>
       </table>
