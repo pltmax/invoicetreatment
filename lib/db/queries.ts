@@ -313,3 +313,16 @@ export async function saveThresholds(db: Client, values: Thresholds): Promise<vo
     ],
   });
 }
+
+export interface EntityRow {
+  id: string;
+  name: string;
+}
+
+export async function getEntities(db: Client): Promise<EntityRow[]> {
+  const result = await db.execute("SELECT id, name FROM entities ORDER BY name");
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    name: String(row.name),
+  }));
+}
