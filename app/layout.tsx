@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Approbation des factures",
+  title: "Demo traitement des factures",
   description: "Démo d'approbation centralisée des factures",
 };
 

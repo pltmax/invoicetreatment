@@ -72,7 +72,7 @@ export function Nav() {
   return (
     <header className="no-print flex items-center justify-between gap-2 border-b border-gray-200 px-2 py-2 sm:px-4 sm:py-3">
       <Link href="/" className="hidden shrink-0 text-base font-semibold text-gray-900 sm:inline">
-        Approbation des factures
+        Traitement des factures
       </Link>
       <nav aria-label="Navigation principale">
         <ul className="flex items-center gap-1 sm:gap-4">
