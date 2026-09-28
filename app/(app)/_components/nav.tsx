@@ -49,6 +49,17 @@ const LINKS = [
       />
     ),
   },
+  {
+    href: "/extraction",
+    label: "Couche d'extraction",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 4v10m0 0-3.5-3.5M12 14l3.5-3.5M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"
+      />
+    ),
+  },
 ];
 
 function Icon({ children }: { children: React.ReactNode }) {
