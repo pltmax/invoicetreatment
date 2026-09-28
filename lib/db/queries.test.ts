@@ -9,7 +9,7 @@ import {
   getDecisionSessionId,
   getSessionWithDecisions,
   getInboxInvoices,
-  getNotifications,
+  listSessionsWithDecisions,
   getThresholds,
   saveThresholds,
   getEntities,
@@ -191,19 +191,27 @@ describe("getInboxInvoices", () => {
   });
 });
 
-describe("getNotifications", () => {
-  it("returns nothing right after seeding, since no decision has been made yet", async () => {
+describe("listSessionsWithDecisions", () => {
+  it("returns every seeded session ordered by signed_at descending, each with its decisions", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
     await seed(db);
 
-    const notifications = await getNotifications(db);
-    expect(notifications).toEqual([]);
+    const sessions = await listSessionsWithDecisions(db);
+    expect(sessions).toHaveLength(13);
+
+    const signedDates = sessions.map((s) => s.signedAt);
+    expect(signedDates).toEqual([...signedDates].sort().reverse());
+
+    const extra = sessions.find((s) => s.id === "ses-hist-2026-09-26");
+    expect(extra?.kind).toBe("batch");
+    expect(extra?.decisions).toHaveLength(3);
+    expect(extra?.decisions.map((d) => d.invoiceNumber)).toContain("SES-2026-09-26-ORION-01");
 
     db.close();
   });
 
-  it("returns a notification for a decision made this session, excluding seeded history", async () => {
+  it("includes a session created live, with its decisions and level", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
     await seed(db);
@@ -220,13 +228,14 @@ describe("getNotifications", () => {
       },
     ]);
 
-    const notifications = await getNotifications(db);
-    expect(notifications).toHaveLength(1);
-    expect(notifications[0].invoiceNumber).toBe("PEND-NOVALINK-01");
-    expect(notifications[0].entityName).toBe("Arcadia Télécom");
-    expect(notifications[0].level).toBe("green");
-    expect(notifications[0].outcome).toBe("approved");
-    expect(notifications[0].sessionId).toBe(created.sessionId);
+    const sessions = await listSessionsWithDecisions(db);
+    expect(sessions).toHaveLength(14);
+
+    const live = sessions.find((s) => s.id === created.sessionId);
+    expect(live?.decisions).toHaveLength(1);
+    expect(live?.decisions[0].invoiceNumber).toBe("PEND-NOVALINK-01");
+    expect(live?.decisions[0].level).toBe("green");
+    expect(live?.decisions[0].outcome).toBe("approved");
 
     db.close();
   });

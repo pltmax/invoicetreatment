@@ -3,7 +3,6 @@ import type { Client } from "@libsql/client";
 import type { Level, Reason } from "../rules/types";
 import type { Thresholds } from "../rules/thresholds";
 import type { InvoicePdfData } from "../pdf/document";
-import { SEED_HISTORY_SESSION_PREFIX } from "./seed";
 
 export interface PendingInvoiceRow {
   id: string;
@@ -160,31 +159,58 @@ export async function getSessionWithDecisions(
   };
 }
 
-export interface SessionSummaryRow {
+export interface SessionHistoryRow {
   id: string;
   kind: "batch" | "single";
   signedAt: string;
-  decisionCount: number;
+  decisions: BordereauDecisionRow[];
 }
 
-export async function listSessions(db: Client): Promise<SessionSummaryRow[]> {
-  const result = await db.execute(`
-    SELECT
-      sessions.id AS id,
-      sessions.kind AS kind,
-      sessions.signed_at AS signedAt,
-      COUNT(decisions.id) AS decisionCount
-    FROM sessions
-    LEFT JOIN decisions ON decisions.session_id = sessions.id
-    GROUP BY sessions.id
-    ORDER BY sessions.signed_at DESC
-  `);
+export async function listSessionsWithDecisions(db: Client): Promise<SessionHistoryRow[]> {
+  const [sessionsResult, decisionsResult] = await Promise.all([
+    db.execute("SELECT id, kind, signed_at AS signedAt FROM sessions ORDER BY signed_at DESC"),
+    db.execute(`
+      SELECT
+        decisions.session_id AS sessionId,
+        decisions.invoice_id AS invoiceId,
+        invoices.invoice_number AS invoiceNumber,
+        suppliers.name AS supplierName,
+        entities.name AS entityName,
+        invoices.amount_incl_vat_cents AS amountInclVatCents,
+        classifications.level AS level,
+        decisions.outcome AS outcome,
+        decisions.comment AS comment
+      FROM decisions
+      JOIN invoices ON invoices.id = decisions.invoice_id
+      JOIN suppliers ON suppliers.id = invoices.supplier_id
+      JOIN entities ON entities.id = invoices.entity_id
+      LEFT JOIN classifications ON classifications.invoice_id = invoices.id
+      ORDER BY invoices.due_date ASC
+    `),
+  ]);
 
-  return result.rows.map((row) => ({
+  const decisionsBySession = new Map<string, BordereauDecisionRow[]>();
+  for (const row of decisionsResult.rows) {
+    const sessionId = String(row.sessionId);
+    const list = decisionsBySession.get(sessionId) ?? [];
+    list.push({
+      invoiceId: String(row.invoiceId),
+      invoiceNumber: String(row.invoiceNumber),
+      supplierName: String(row.supplierName),
+      entityName: String(row.entityName),
+      amountInclVatCents: Number(row.amountInclVatCents),
+      level: row.level === null ? null : (String(row.level) as Level),
+      outcome: String(row.outcome) as "approved" | "rejected",
+      comment: row.comment === null ? null : String(row.comment),
+    });
+    decisionsBySession.set(sessionId, list);
+  }
+
+  return sessionsResult.rows.map((row) => ({
     id: String(row.id),
     kind: String(row.kind) as "batch" | "single",
     signedAt: String(row.signedAt),
-    decisionCount: Number(row.decisionCount),
+    decisions: decisionsBySession.get(String(row.id)) ?? [],
   }));
 }
 
@@ -220,53 +246,6 @@ export async function getInboxInvoices(db: Client): Promise<InboxInvoiceRow[]> {
     entityName: String(row.entityName),
     amountInclVatCents: Number(row.amountInclVatCents),
     receivedAt: String(row.receivedAt),
-  }));
-}
-
-export interface NotificationRow {
-  invoiceId: string;
-  invoiceNumber: string;
-  entityName: string;
-  amountInclVatCents: number;
-  level: Level | null;
-  outcome: "approved" | "rejected";
-  sentAt: string;
-  sessionId: string;
-}
-
-export async function getNotifications(db: Client): Promise<NotificationRow[]> {
-  const result = await db.execute({
-    sql: `
-      SELECT
-        decisions.invoice_id AS invoiceId,
-        invoices.invoice_number AS invoiceNumber,
-        entities.name AS entityName,
-        invoices.amount_incl_vat_cents AS amountInclVatCents,
-        classifications.level AS level,
-        decisions.outcome AS outcome,
-        decisions.created_at AS sentAt,
-        decisions.session_id AS sessionId
-      FROM decisions
-      JOIN invoices ON invoices.id = decisions.invoice_id
-      JOIN entities ON entities.id = invoices.entity_id
-      LEFT JOIN classifications ON classifications.invoice_id = invoices.id
-      -- Excludes seed.ts's backfilled 12-month approval history, which
-      -- never sent a real notification.
-      WHERE decisions.session_id NOT LIKE ?
-      ORDER BY decisions.created_at DESC
-    `,
-    args: [`${SEED_HISTORY_SESSION_PREFIX}%`],
-  });
-
-  return result.rows.map((row) => ({
-    invoiceId: String(row.invoiceId),
-    invoiceNumber: String(row.invoiceNumber),
-    entityName: String(row.entityName),
-    amountInclVatCents: Number(row.amountInclVatCents),
-    level: row.level === null ? null : (String(row.level) as Level),
-    outcome: String(row.outcome) as "approved" | "rejected",
-    sentAt: String(row.sentAt),
-    sessionId: String(row.sessionId),
   }));
 }
 
