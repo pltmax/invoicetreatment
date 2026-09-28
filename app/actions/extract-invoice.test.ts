@@ -1,0 +1,109 @@
+import { describe, it, expect } from "vitest";
+import { createClient } from "@libsql/client";
+import { migrate } from "../../lib/db/migrate";
+import { seed } from "../../lib/db/seed";
+import { resolveSupplierId, findContractId } from "./extract-invoice";
+import type { ExtractedInvoice } from "../../lib/extraction/schema";
+
+function fixture(overrides: Partial<ExtractedInvoice> = {}): ExtractedInvoice {
+  return {
+    supplierName: "Not A Real Match",
+    printedSiren: "000000000",
+    printedVatNumber: "FR00000000000",
+    printedIban: "FR0000000000000000000000000",
+    invoiceNumber: "TEST-001",
+    category: "telecom_maintenance",
+    amountExclVatCents: 100000,
+    amountInclVatCents: 120000,
+    issueDate: "2026-06-01",
+    dueDate: "2026-07-01",
+    ...overrides,
+  };
+}
+
+describe("resolveSupplierId", () => {
+  it("matches an existing supplier by SIREN", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const existing = await db.execute("SELECT siren FROM suppliers WHERE id = 'sup-novalink'");
+    const siren = String(existing.rows[0].siren);
+
+    const supplierId = await resolveSupplierId(db, fixture({ printedSiren: siren }));
+    expect(supplierId).toBe("sup-novalink");
+
+    const count = await db.execute("SELECT COUNT(*) as n FROM suppliers");
+    expect(Number(count.rows[0].n)).toBe(13);
+
+    db.close();
+  });
+
+  it("matches an existing supplier by case-insensitive name", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const supplierId = await resolveSupplierId(db, fixture({ supplierName: "novalink télécom" }));
+    expect(supplierId).toBe("sup-novalink");
+
+    db.close();
+  });
+
+  it("creates a new supplier with one backdated IBAN history row when nothing matches", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const supplierId = await resolveSupplierId(
+      db,
+      fixture({
+        supplierName: "Brand New Fournisseur",
+        printedSiren: "999999999",
+        printedIban: "FR9999999999999999999999999",
+        issueDate: "2026-06-15",
+      })
+    );
+
+    expect(supplierId).not.toBe("sup-novalink");
+
+    const supplierRow = await db.execute({
+      sql: "SELECT name FROM suppliers WHERE id = ?",
+      args: [supplierId],
+    });
+    expect(supplierRow.rows[0].name).toBe("Brand New Fournisseur");
+
+    const ibanRows = await db.execute({
+      sql: "SELECT iban, effective_from as effectiveFrom FROM iban_history WHERE supplier_id = ?",
+      args: [supplierId],
+    });
+    expect(ibanRows.rows).toHaveLength(1);
+    expect(ibanRows.rows[0].effectiveFrom).toBe("2025-06-15");
+
+    db.close();
+  });
+});
+
+describe("findContractId", () => {
+  it("returns the contract id for a known entity+supplier pair", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const contractId = await findContractId(db, "ent-telecom", "sup-novalink");
+    expect(contractId).toBe("con-novalink-telecom");
+
+    db.close();
+  });
+
+  it("returns null when no contract exists for the pair", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const contractId = await findContractId(db, "ent-media", "sup-novalink");
+    expect(contractId).toBeNull();
+
+    db.close();
+  });
+});
