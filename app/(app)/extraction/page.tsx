@@ -28,9 +28,9 @@ export default async function ExtractionPage({
       </div>
 
       <div className="space-y-3 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-        <p className="font-medium text-gray-900">En production cela marcherait de la manière suivante: </p>
+        <p className="font-medium text-gray-900">En production&apos; cela marcherait de la manière suivante: </p>
         <p>
-          Chaque facture reçue par email dans une boîte de réception type: &quot;invoices@holding.com&quot; serait captée par un webhook de
+          Chaque facture reçue par email dans une boîte de réception dédiée, type: &quot;invoices@holding.com&quot;, serait captée par un webhook de
           réception et la pièce jointe PDF serait récupérée automatiquement, puis traitée comme c&apos;est le cas dans cette page
           pour une extraction structurée des données. La facture apparaîtrait alors directement dans la file d&apos;attente, classée et prête à être
           examinée.
