@@ -11,6 +11,7 @@ describe("unusual-category rule", () => {
     const reason = unusualCategoryRule(ctx);
     expect(reason?.code).toBe("UNUSUAL_CATEGORY");
     expect(reason?.level).toBe("orange");
+    expect(reason?.message).toBe("Catégorie inhabituelle pour la filiale : Marketing");
   });
 
   it("does not trigger when the category has been approved before", () => {

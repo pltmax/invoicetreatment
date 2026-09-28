@@ -7,9 +7,9 @@ const LEVEL_COLOR: Record<Level, string> = {
 };
 
 const LEVEL_LABEL: Record<Level, string> = {
-  green: "Vert",
-  orange: "Orange",
-  red: "Rouge",
+  green: "Conforme",
+  orange: "En vigilance",
+  red: "En alerte",
 };
 
 export function LevelBadge({ level, label }: { level: Level; label?: string }) {

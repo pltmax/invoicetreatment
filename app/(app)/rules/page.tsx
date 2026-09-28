@@ -34,14 +34,14 @@ export default async function RulesPage({
       )}
       {error === "order" && (
         <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-          Le seuil rouge de l&apos;écart doit être supérieur au seuil orange.
+          Le seuil d&apos;alerte de l&apos;écart doit être supérieur au seuil de vigilance.
         </p>
       )}
 
       <form action={updateThresholds} className="space-y-8">
         <div>
           <h2 className="mb-3">
-            <LevelBadge level="red" label="Rouge" />
+            <LevelBadge level="red" label="En alerte" />
           </h2>
           <div className="space-y-4">
             <div>
@@ -66,10 +66,10 @@ export default async function RulesPage({
             </div>
             <div>
               <label htmlFor="deviationRedPct" className="mb-1 block text-sm font-medium text-gray-900">
-                Écart vs historique / contrat / filiale — rouge
+                Écart vs historique / contrat / filiale
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Au-delà de ce pourcentage d&apos;écart, la facture passe au rouge.
+                Passage en alerte au delà d&apos;un écart de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -89,8 +89,7 @@ export default async function RulesPage({
                 IBAN modifié récemment
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Facture rouge si l&apos;IBAN du fournisseur a changé il y a moins de ce
-                nombre de jours.
+                L&apos;IBAN du fournisseur a changé il y a moins de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -110,8 +109,7 @@ export default async function RulesPage({
                 Événement de risque fournisseur
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Facture rouge si un événement de risque a été signalé il y a moins de ce
-                nombre de mois.
+                Événement de risque signalé il y a moins de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -128,11 +126,10 @@ export default async function RulesPage({
             </div>
             <div>
               <label htmlFor="duplicateWindowDays" className="mb-1 block text-sm font-medium text-gray-900">
-                Facture en double — fenêtre
+                Facture en double
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Même montant, même filiale, émise à moins de ce nombre de jours d&apos;une
-                autre facture déjà connue.
+                Une autre facture identique (montant, filiale, date) a été émise à moins de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -152,15 +149,15 @@ export default async function RulesPage({
 
         <div>
           <h2 className="mb-3">
-            <LevelBadge level="orange" label="Orange" />
+            <LevelBadge level="orange" label="En vigilance" />
           </h2>
           <div className="space-y-4">
             <div>
               <label htmlFor="deviationOrangePct" className="mb-1 block text-sm font-medium text-gray-900">
-                Écart vs historique / contrat / filiale — orange
+                Écart vs historique / contrat / filiale
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Au-delà de ce pourcentage d&apos;écart, la facture passe à l&apos;orange.
+                Passage en vigilance au delà d&apos;un écart de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -177,11 +174,11 @@ export default async function RulesPage({
             </div>
             <div>
               <label htmlFor="newSupplierAmountEuros" className="mb-1 block text-sm font-medium text-gray-900">
-                Nouveau fournisseur — seuil
+                Seuil de vigilance pour un nouveau fournisseur
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                Première facture d&apos;un fournisseur : orange en dessous de ce montant HT,
-                rouge au-dessus.
+                Première facture d&apos;un fournisseur : vigilance en dessous de ce montant HT,
+                alerte au-dessus.
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -198,11 +195,10 @@ export default async function RulesPage({
             </div>
             <div>
               <label htmlFor="recurringMinInvoices" className="mb-1 block text-sm font-medium text-gray-900">
-                Minimum de factures pour être « récurrent »
+                Minimum de factures identiques pour être classé comme dépense récurrente
               </label>
               <p className="mb-1 text-sm text-gray-500">
-                En dessous de ce nombre de factures approuvées pour cette filiale, la
-                facture passe à l&apos;orange.
+                La facture reste en vigilance si l&apos;on a reçu moins de :
               </p>
               <div className="flex items-center gap-2">
                 <input
@@ -214,7 +210,7 @@ export default async function RulesPage({
                   step="1"
                   className="w-32 rounded border border-gray-300 p-2 text-right"
                 />
-                <span className="text-sm text-gray-500">factures</span>
+                <span className="text-sm text-gray-500">factures au montant identiques</span>
               </div>
             </div>
             <div>

@@ -1,6 +1,6 @@
 // lib/format.test.ts
 import { describe, it, expect } from "vitest";
-import { formatEuros, formatPercent, formatDateFr, formatIbanGrouped } from "./format";
+import { formatEuros, formatPercent, formatDateFr, formatIbanGrouped, formatCategory } from "./format";
 
 describe("formatEuros", () => {
   it("shows cents below 1 000 €", () => {
@@ -38,5 +38,27 @@ describe("formatDateFr", () => {
 describe("formatIbanGrouped", () => {
   it("groups an IBAN into 4-character blocks", () => {
     expect(formatIbanGrouped("FR1420041010050500013M02606")).toBe("FR14 2004 1010 0505 0001 3M02 606");
+  });
+});
+
+describe("formatCategory", () => {
+  it("translates every category used in the seed data to French", () => {
+    expect(formatCategory("cloud_hosting")).toBe("Hébergement cloud");
+    expect(formatCategory("consulting")).toBe("Conseil");
+    expect(formatCategory("design")).toBe("Design");
+    expect(formatCategory("equipment")).toBe("Équipement");
+    expect(formatCategory("facilities")).toBe("Entretien des locaux");
+    expect(formatCategory("fleet")).toBe("Flotte automobile");
+    expect(formatCategory("it_integration")).toBe("Intégration informatique");
+    expect(formatCategory("logistics")).toBe("Logistique");
+    expect(formatCategory("maintenance")).toBe("Maintenance");
+    expect(formatCategory("marketing")).toBe("Marketing");
+    expect(formatCategory("office_supplies")).toBe("Fournitures de bureau");
+    expect(formatCategory("telecom_maintenance")).toBe("Maintenance télécom");
+    expect(formatCategory("utilities")).toBe("Énergie et fluides");
+  });
+
+  it("falls back to the raw value for an unknown category", () => {
+    expect(formatCategory("something_new")).toBe("something_new");
   });
 });

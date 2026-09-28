@@ -7,7 +7,7 @@ import { median } from "@/lib/rules/stats";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
 import { ReasonList } from "@/components/reason-list";
-import { formatDateFr, formatEuros, formatIbanGrouped } from "@/lib/format";
+import { formatDateFr, formatEuros, formatIbanGrouped, formatCategory } from "@/lib/format";
 import { signSingleDecision } from "@/app/actions/sign";
 
 export const dynamic = "force-dynamic";
@@ -93,7 +93,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </div>
           <div>
             <dt className="text-gray-500">Catégorie</dt>
-            <dd className="text-gray-900">{context.invoice.category}</dd>
+            <dd className="text-gray-900">{formatCategory(context.invoice.category)}</dd>
           </div>
         </dl>
       </div>
@@ -183,7 +183,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <dt className="text-gray-500">Catégorie</dt>
-              <dd className="text-gray-900">{context.contract.category}</dd>
+              <dd className="text-gray-900">{formatCategory(context.contract.category)}</dd>
             </div>
             <div>
               <dt className="text-gray-500">Montant attendu HT</dt>
