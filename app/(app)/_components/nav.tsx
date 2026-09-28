@@ -29,12 +29,12 @@ const LINKS = [
   },
   {
     href: "/notifications",
-    label: "Notifications",
+    label: "Historique",
     icon: (
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M6 9a6 6 0 1 1 12 0c0 3.5 1 5 2 6H4c1-1 2-2.5 2-6ZM10 19a2 2 0 0 0 4 0"
+        d="M12 7v5l3 3M12 3a9 9 0 1 0 9 9"
       />
     ),
   },
