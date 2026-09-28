@@ -37,6 +37,7 @@ CREATE TABLE suppliers (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   siren TEXT NOT NULL UNIQUE,
+  siret TEXT NOT NULL,
   vat_number TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -89,6 +90,7 @@ CREATE TABLE invoices (
   printed_siren TEXT NOT NULL,
   printed_vat_number TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  pdf_blob_pathname TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

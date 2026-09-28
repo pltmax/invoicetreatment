@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
+import { generateValidSiret } from "../checks/siret";
 import type { ExtractedInvoice } from "./schema";
 
 // SQLite's LOWER() is ASCII-only, so accent differences (very plausible from
@@ -31,8 +32,14 @@ export async function resolveSupplierId(db: Client, extracted: ExtractedInvoice)
   await db.batch(
     [
       {
-        sql: "INSERT INTO suppliers (id, name, siren, vat_number) VALUES (?, ?, ?, ?)",
-        args: [supplierId, extracted.supplierName, extracted.printedSiren, extracted.printedVatNumber],
+        sql: "INSERT INTO suppliers (id, name, siren, siret, vat_number) VALUES (?, ?, ?, ?, ?)",
+        args: [
+          supplierId,
+          extracted.supplierName,
+          extracted.printedSiren,
+          generateValidSiret(extracted.printedSiren),
+          extracted.printedVatNumber,
+        ],
       },
       {
         sql: "INSERT INTO iban_history (id, supplier_id, iban, effective_from) VALUES (?, ?, ?, ?)",

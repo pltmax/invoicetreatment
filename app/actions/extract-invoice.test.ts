@@ -7,12 +7,13 @@ vi.mock("../../lib/db/client", () => ({ db: {} }));
 import { migrate } from "../../lib/db/migrate";
 import { seed } from "../../lib/db/seed";
 import { resolveSupplierId, findContractId } from "../../lib/extraction/supplier-matching";
+import { generateValidSiren } from "../../lib/checks/siren";
 import type { ExtractedInvoice } from "../../lib/extraction/schema";
 
 function fixture(overrides: Partial<ExtractedInvoice> = {}): ExtractedInvoice {
   return {
     supplierName: "Not A Real Match",
-    printedSiren: "000000000",
+    printedSiren: generateValidSiren("40000099"),
     printedVatNumber: "FR00000000000",
     printedIban: "FR0000000000000000000000000",
     invoiceNumber: "TEST-001",
@@ -74,7 +75,7 @@ describe("resolveSupplierId", () => {
       db,
       fixture({
         supplierName: "Brand New Fournisseur",
-        printedSiren: "999999999",
+        printedSiren: generateValidSiren("99999999"),
         printedIban: "FR9999999999999999999999999",
         issueDate: "2026-06-15",
       })

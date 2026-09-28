@@ -27,4 +27,19 @@ describe("migrate", () => {
 
     db.close();
   });
+
+  it("adds siret to suppliers and pdf_blob_pathname to invoices", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+
+    const supplierColumns = await db.execute("PRAGMA table_info(suppliers)");
+    const supplierColumnNames = supplierColumns.rows.map((row) => String(row.name));
+    expect(supplierColumnNames).toContain("siret");
+
+    const invoiceColumns = await db.execute("PRAGMA table_info(invoices)");
+    const invoiceColumnNames = invoiceColumns.rows.map((row) => String(row.name));
+    expect(invoiceColumnNames).toContain("pdf_blob_pathname");
+
+    db.close();
+  });
 });
