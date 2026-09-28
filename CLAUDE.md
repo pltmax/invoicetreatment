@@ -19,13 +19,13 @@ Centralized invoice approval for a holding CEO. Subsidiaries' invoices arrive by
 - `lib/checks/`: SIREN (Luhn), FR VAT key, IBAN validation
 - `app/`: pages and server actions. Mobile first: the CEO decides from his phone.
 
-## Domain rules (source of truth: lib/rules/thresholds.ts)
+## Domain rules (defaults source of truth: lib/rules/thresholds.ts; live values: the thresholds DB row, editable at /rules)
 - Red if any: deviation > Y% vs history, contract or another subsidiary on a similar service; suspected duplicate (same number, or same amount within N days); IBAN changed or different from the registered one; foreign IBAN for an FR supplier; SIREN/VAT inconsistent with the company name; new supplier with amount > 50k€; active supplier risk flag
 - Orange if any: deviation from contract or history > 5%; new supplier with amount ≤ 50k€; no contract attached; unusual category for the subsidiary
 - Green only if: known supplier, no risk history, matches an active contract, recurring spend
 - Every classification must carry human-readable reasons. Never a level without a reason.
 - Red always wins over orange, and orange over green.
-- Thresholds are constants in one file, never inlined.
+- Thresholds live in the thresholds DB table (defaults defined once in lib/rules/thresholds.ts), editable via the /rules page — never hardcoded elsewhere.
 
 ## Decision flow
 - Pending invoices sorted by payment due date

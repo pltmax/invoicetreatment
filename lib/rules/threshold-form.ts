@@ -1,14 +1,6 @@
-export interface ParsedThresholdsInput {
-  deviationOrange: number;
-  deviationRed: number;
-  newSupplierAmountCents: number;
-  exceptionalAmountCents: number;
-  ibanRecentChangeDays: number;
-  riskWindowMonths: number;
-  duplicateWindowDays: number;
-  recurringMinInvoices: number;
-  historySample: number;
-}
+import type { Thresholds } from "./thresholds";
+
+export type ParsedThresholdsInput = Thresholds;
 
 // Reads the raw form fields (euros/percent, matching what the /rules page
 // displays), validates they're all finite positive numbers, and converts
@@ -37,6 +29,17 @@ export function parseThresholdsForm(formData: FormData): ParsedThresholdsInput |
     historySample,
   ];
   if (rawValues.some((value) => !Number.isFinite(value) || value <= 0)) {
+    return null;
+  }
+
+  const integerValues = [
+    ibanRecentChangeDays,
+    riskWindowMonths,
+    duplicateWindowDays,
+    recurringMinInvoices,
+    historySample,
+  ];
+  if (integerValues.some((value) => !Number.isInteger(value))) {
     return null;
   }
 

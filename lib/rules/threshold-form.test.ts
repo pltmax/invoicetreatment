@@ -42,6 +42,23 @@ describe("parseThresholdsForm", () => {
     expect(parseThresholdsForm(formWith({ recurringMinInvoices: "-1" }))).toBeNull();
     expect(parseThresholdsForm(formWith({ historySample: "abc" }))).toBeNull();
   });
+
+  it("returns null when a count/day/month field is not an integer", () => {
+    expect(parseThresholdsForm(formWith({ historySample: "2.5" }))).toBeNull();
+    expect(parseThresholdsForm(formWith({ ibanRecentChangeDays: "90.5" }))).toBeNull();
+    expect(parseThresholdsForm(formWith({ riskWindowMonths: "12.1" }))).toBeNull();
+    expect(parseThresholdsForm(formWith({ duplicateWindowDays: "60.9" }))).toBeNull();
+    expect(parseThresholdsForm(formWith({ recurringMinInvoices: "3.5" }))).toBeNull();
+  });
+
+  it("still accepts non-integer values for percent/amount fields", () => {
+    const parsed = parseThresholdsForm(
+      formWith({ deviationOrangePct: "12.5", exceptionalAmountEuros: "1500.50" })
+    );
+    expect(parsed).not.toBeNull();
+    expect(parsed!.deviationOrange).toBeCloseTo(0.125);
+    expect(parsed!.exceptionalAmountCents).toBe(150050);
+  });
 });
 
 describe("isValidThresholdOrder", () => {

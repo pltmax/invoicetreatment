@@ -2,7 +2,6 @@ import "server-only";
 import type { Client } from "@libsql/client";
 import type { Level, Reason } from "../rules/types";
 import type { Thresholds } from "../rules/thresholds";
-import type { ParsedThresholdsInput } from "../rules/threshold-form";
 import { SEED_HISTORY_SESSION_PREFIX } from "./seed";
 
 export interface PendingInvoiceRow {
@@ -290,7 +289,7 @@ export async function getThresholds(db: Client): Promise<Thresholds> {
   };
 }
 
-export async function saveThresholds(db: Client, values: ParsedThresholdsInput): Promise<void> {
+export async function saveThresholds(db: Client, values: Thresholds): Promise<void> {
   await db.execute({
     sql: `UPDATE thresholds SET
       deviation_orange = ?, deviation_red = ?, new_supplier_amount_cents = ?,
