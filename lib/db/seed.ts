@@ -9,6 +9,11 @@ import { classifyAll } from "../rules/classify-all";
 
 export type ClassificationLevel = "green" | "orange" | "red";
 
+// Session id prefix for the 12-month approval history this seed backfills.
+// Queries use it to exclude that backfill from anything meant to reflect
+// decisions made during the live demo (e.g. notifications, demo-check).
+export const SEED_HISTORY_SESSION_PREFIX = "ses-hist-";
+
 export interface ExpectedClassification {
   invoiceNumber: string;
   scenario: string;
@@ -543,7 +548,7 @@ export async function seed(db: Client): Promise<void> {
     invoicesByMonth.set(invoice.monthsAgo, list);
   }
   for (const [monthsAgo, invoicesThisMonth] of invoicesByMonth) {
-    const sessionId = `ses-hist-m${monthsAgo}`;
+    const sessionId = `${SEED_HISTORY_SESSION_PREFIX}m${monthsAgo}`;
     const signedAt = isoDate(addDays(monthsBefore(today, monthsAgo), 3));
     const contentHash = sha256Hex(
       JSON.stringify({
@@ -554,7 +559,7 @@ export async function seed(db: Client): Promise<void> {
     );
     statements.push({
       sql: "INSERT INTO sessions (id, kind, content_hash, signature_ref, signed_at) VALUES (?, 'batch', ?, ?, ?)",
-      args: [sessionId, contentHash, `MOCK-${sessionId}`, signedAt],
+      args: [sessionId, contentHash, `MOCK-YOUSIGN-${sessionId}`, signedAt],
     });
     for (const invoice of invoicesThisMonth) {
       statements.push({

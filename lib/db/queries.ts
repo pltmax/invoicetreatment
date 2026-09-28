@@ -1,6 +1,7 @@
 import "server-only";
 import type { Client } from "@libsql/client";
 import type { Level, Reason } from "../rules/types";
+import { SEED_HISTORY_SESSION_PREFIX } from "./seed";
 
 export interface PendingInvoiceRow {
   id: string;
@@ -155,6 +156,85 @@ export async function getSessionWithDecisions(
       comment: row.comment === null ? null : String(row.comment),
     })),
   };
+}
+
+export interface InboxInvoiceRow {
+  id: string;
+  invoiceNumber: string;
+  supplierName: string;
+  entityName: string;
+  amountInclVatCents: number;
+  receivedAt: string;
+}
+
+export async function getInboxInvoices(db: Client): Promise<InboxInvoiceRow[]> {
+  const result = await db.execute(`
+    SELECT
+      invoices.id AS id,
+      invoices.invoice_number AS invoiceNumber,
+      suppliers.name AS supplierName,
+      entities.name AS entityName,
+      invoices.amount_incl_vat_cents AS amountInclVatCents,
+      invoices.created_at AS receivedAt
+    FROM invoices
+    JOIN suppliers ON suppliers.id = invoices.supplier_id
+    JOIN entities ON entities.id = invoices.entity_id
+    WHERE invoices.status = 'pending'
+    ORDER BY invoices.created_at DESC
+  `);
+
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    invoiceNumber: String(row.invoiceNumber),
+    supplierName: String(row.supplierName),
+    entityName: String(row.entityName),
+    amountInclVatCents: Number(row.amountInclVatCents),
+    receivedAt: String(row.receivedAt),
+  }));
+}
+
+export interface NotificationRow {
+  invoiceId: string;
+  invoiceNumber: string;
+  entityName: string;
+  amountInclVatCents: number;
+  level: Level | null;
+  outcome: "approved" | "rejected";
+  sentAt: string;
+}
+
+export async function getNotifications(db: Client): Promise<NotificationRow[]> {
+  const result = await db.execute({
+    sql: `
+      SELECT
+        decisions.invoice_id AS invoiceId,
+        invoices.invoice_number AS invoiceNumber,
+        entities.name AS entityName,
+        invoices.amount_incl_vat_cents AS amountInclVatCents,
+        classifications.level AS level,
+        decisions.outcome AS outcome,
+        decisions.created_at AS sentAt
+      FROM decisions
+      JOIN invoices ON invoices.id = decisions.invoice_id
+      JOIN entities ON entities.id = invoices.entity_id
+      LEFT JOIN classifications ON classifications.invoice_id = invoices.id
+      -- Excludes seed.ts's backfilled 12-month approval history, which
+      -- never sent a real notification.
+      WHERE decisions.session_id NOT LIKE ?
+      ORDER BY decisions.created_at DESC
+    `,
+    args: [`${SEED_HISTORY_SESSION_PREFIX}%`],
+  });
+
+  return result.rows.map((row) => ({
+    invoiceId: String(row.invoiceId),
+    invoiceNumber: String(row.invoiceNumber),
+    entityName: String(row.entityName),
+    amountInclVatCents: Number(row.amountInclVatCents),
+    level: row.level === null ? null : (String(row.level) as Level),
+    outcome: String(row.outcome) as "approved" | "rejected",
+    sentAt: String(row.sentAt),
+  }));
 }
 
 export async function getInvoicesByIds(db: Client, ids: string[]): Promise<PendingInvoiceRow[]> {

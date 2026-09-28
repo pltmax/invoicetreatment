@@ -8,6 +8,8 @@ import {
   getInvoicesByIds,
   getDecisionSessionId,
   getSessionWithDecisions,
+  getInboxInvoices,
+  getNotifications,
 } from "./queries";
 import { createSession } from "../sessions";
 
@@ -162,6 +164,63 @@ describe("getSessionWithDecisions", () => {
     await migrate(db);
     const session = await getSessionWithDecisions(db, "does-not-exist");
     expect(session).toBeNull();
+    db.close();
+  });
+});
+
+describe("getInboxInvoices", () => {
+  it("returns all 13 pending invoices sorted by received date descending", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await getInboxInvoices(db);
+    expect(rows.length).toBe(13);
+
+    const receivedAts = rows.map((r) => r.receivedAt);
+    const sorted = [...receivedAts].sort().reverse();
+    expect(receivedAts).toEqual(sorted);
+
+    db.close();
+  });
+});
+
+describe("getNotifications", () => {
+  it("returns nothing right after seeding, since no decision has been made yet", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const notifications = await getNotifications(db);
+    expect(notifications).toEqual([]);
+
+    db.close();
+  });
+
+  it("returns a notification for a decision made this session, excluding seeded history", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await getPendingInvoices(db);
+    const novalink = rows.find((r) => r.invoiceNumber === "PEND-NOVALINK-01")!;
+    await createSession(db, "batch", [
+      {
+        invoiceId: novalink.id,
+        entityName: novalink.entityName,
+        amountInclVatCents: novalink.amountInclVatCents,
+        outcome: "approved",
+        comment: null,
+      },
+    ]);
+
+    const notifications = await getNotifications(db);
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].invoiceNumber).toBe("PEND-NOVALINK-01");
+    expect(notifications[0].entityName).toBe("Arcadia Télécom");
+    expect(notifications[0].level).toBe("green");
+    expect(notifications[0].outcome).toBe("approved");
+
     db.close();
   });
 });

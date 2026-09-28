@@ -11,6 +11,7 @@
     "db:migrate": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/migrate.ts",
     "db:seed": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/seed.ts",
     "db:reset": "npm run db:migrate && npm run db:seed",
+    "seed": "npm run db:reset",
     "classify": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/classify.ts"
   },
   "dependencies": {

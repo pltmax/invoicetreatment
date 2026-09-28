@@ -50,7 +50,7 @@ export async function createSession(
 
   const sessionId = `ses-${randomUUID()}`;
   const signedAt = new Date().toISOString();
-  const signatureRef = `MOCK-${randomUUID()}`;
+  const signatureRef = `MOCK-YOUSIGN-${randomUUID()}`;
 
   const contentHash = sha256Hex(
     JSON.stringify({
