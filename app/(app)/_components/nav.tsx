@@ -17,17 +17,6 @@ const LINKS = [
     ),
   },
   {
-    href: "/inbox",
-    label: "Boîte de réception",
-    icon: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 8.5 12 14l9-5.5M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
-      />
-    ),
-  },
-  {
     href: "/notifications",
     label: "Historique",
     icon: (
@@ -57,6 +46,17 @@ const LINKS = [
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M12 4v10m0 0-3.5-3.5M12 14l3.5-3.5M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"
+      />
+    ),
+  },
+  {
+    href: "/inbox",
+    label: "Boîte de réception",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 8.5 12 14l9-5.5M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"
       />
     ),
   },
