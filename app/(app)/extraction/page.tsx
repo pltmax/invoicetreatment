@@ -28,21 +28,17 @@ export default async function ExtractionPage({
       </div>
 
       <div className="space-y-3 rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-        <p className="font-medium text-gray-900">Comment ça marche en production</p>
+        <p className="font-medium text-gray-900">En production cela marcherait de la manière suivante: </p>
         <p>
-          Chaque facture reçue par email à invoices@holding.com serait captée par un webhook de
-          réception : la pièce jointe PDF est récupérée automatiquement, puis envoyée à Claude
-          pour une extraction structurée des données (fournisseur, montants, dates, IBAN...). La
-          facture apparaît alors directement dans la file d&apos;attente, classée et prête à être
-          examinée — sans aucune intervention humaine.
+          Chaque facture reçue par email dans une boîte de réception type: &quot;invoices@holding.com&quot; serait captée par un webhook de
+          réception et la pièce jointe PDF serait récupérée automatiquement, puis traitée comme c&apos;est le cas dans cette page
+          pour une extraction structurée des données. La facture apparaîtrait alors directement dans la file d&apos;attente, classée et prête à être
+          examinée.
         </p>
         <p>
-          Pour cette démo, vous pouvez déclencher cette même étape manuellement : choisissez la
-          filiale destinataire et déposez un PDF de facture ci-dessous. Le PDF est transmis à
-          Claude pour extraction, puis stocké de façon privée — il reste consultable depuis la
-          fiche de la facture une fois créée.
+          Pour la démo, on peut déclencher cette même étape manuellement en choisissant la
+          filiale destinataire et en déposant un PDF de facture ci-dessous.
         </p>
-        <p className="text-gray-500">Utilisez uniquement des factures fictives (aucune donnée réelle).</p>
       </div>
 
       {errorText && (
