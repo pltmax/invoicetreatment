@@ -45,7 +45,7 @@ export default async function RulesPage({
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="exceptionalAmountEuros" className="mb-1 block text-sm font-medium text-gray-900">
                 Montant exceptionnel
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -54,6 +54,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="exceptionalAmountEuros"
                   name="exceptionalAmountEuros"
                   defaultValue={thresholds.exceptionalAmountCents / 100}
                   min="1"
@@ -64,7 +65,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="deviationRedPct" className="mb-1 block text-sm font-medium text-gray-900">
                 Écart vs historique / contrat / filiale — rouge
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -73,6 +74,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="deviationRedPct"
                   name="deviationRedPct"
                   defaultValue={Math.round(thresholds.deviationRed * 100)}
                   min="1"
@@ -83,7 +85,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="ibanRecentChangeDays" className="mb-1 block text-sm font-medium text-gray-900">
                 IBAN modifié récemment
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -93,6 +95,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="ibanRecentChangeDays"
                   name="ibanRecentChangeDays"
                   defaultValue={thresholds.ibanRecentChangeDays}
                   min="1"
@@ -103,7 +106,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="riskWindowMonths" className="mb-1 block text-sm font-medium text-gray-900">
                 Événement de risque fournisseur
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -113,6 +116,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="riskWindowMonths"
                   name="riskWindowMonths"
                   defaultValue={thresholds.riskWindowMonths}
                   min="1"
@@ -123,7 +127,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="duplicateWindowDays" className="mb-1 block text-sm font-medium text-gray-900">
                 Facture en double — fenêtre
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -133,6 +137,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="duplicateWindowDays"
                   name="duplicateWindowDays"
                   defaultValue={thresholds.duplicateWindowDays}
                   min="1"
@@ -151,7 +156,7 @@ export default async function RulesPage({
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="deviationOrangePct" className="mb-1 block text-sm font-medium text-gray-900">
                 Écart vs historique / contrat / filiale — orange
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -160,6 +165,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="deviationOrangePct"
                   name="deviationOrangePct"
                   defaultValue={Math.round(thresholds.deviationOrange * 100)}
                   min="1"
@@ -170,7 +176,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="newSupplierAmountEuros" className="mb-1 block text-sm font-medium text-gray-900">
                 Nouveau fournisseur — seuil
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -180,6 +186,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="newSupplierAmountEuros"
                   name="newSupplierAmountEuros"
                   defaultValue={thresholds.newSupplierAmountCents / 100}
                   min="1"
@@ -190,7 +197,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="recurringMinInvoices" className="mb-1 block text-sm font-medium text-gray-900">
                 Minimum de factures pour être « récurrent »
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -200,6 +207,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="recurringMinInvoices"
                   name="recurringMinInvoices"
                   defaultValue={thresholds.recurringMinInvoices}
                   min="1"
@@ -210,7 +218,7 @@ export default async function RulesPage({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-900">
+              <label htmlFor="historySample" className="mb-1 block text-sm font-medium text-gray-900">
                 Taille de l&apos;échantillon d&apos;historique
               </label>
               <p className="mb-1 text-sm text-gray-500">
@@ -220,6 +228,7 @@ export default async function RulesPage({
               <div className="flex items-center gap-2">
                 <input
                   type="number"
+                  id="historySample"
                   name="historySample"
                   defaultValue={thresholds.historySample}
                   min="1"
