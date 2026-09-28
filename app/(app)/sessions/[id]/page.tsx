@@ -19,7 +19,7 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
   const total = session.decisions.reduce((sum, d) => sum + d.amountInclVatCents, 0);
 
   return (
-    <div className="space-y-6 px-4 py-4">
+    <div className="space-y-6 px-6 py-4">
       <div className="no-print flex justify-end gap-3">
         <PrintButton />
       </div>
