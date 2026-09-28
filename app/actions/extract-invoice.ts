@@ -2,54 +2,30 @@
 
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import type { Client } from "@libsql/client";
+import { db } from "../../lib/db/client";
+import { classifyAll } from "../../lib/rules/classify-all";
+import { extractInvoiceFromPdf, ExtractionError } from "../../lib/extraction/extract";
 import type { ExtractedInvoice } from "../../lib/extraction/schema";
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
 
-// The modules below ("next/navigation", the real db client, classifyAll,
-// and the extraction call) are all imported dynamically inside
-// extractInvoice rather than statically at the top of this file. That's
-// deliberate: resolveSupplierId and findContractId are unit-tested by
-// importing this module directly against an isolated in-memory db, and a
-// static top-level import would pull in side effects neither function
-// needs:
-//   - "next/navigation" pulls in React's app-router context, which under
-//     the "react-server" resolve condition (set in vitest.config.ts so a
-//     plain "server-only" import doesn't throw during tests) resolves to
-//     React's react-server build. That build's createContext doesn't
-//     support what app-router-context needs and crashes at import time.
-//   - `db` from lib/db/client.ts eagerly opens data/app.db via
-//     createClient() at module load — a file that doesn't exist in a
-//     fresh checkout/test environment (only `npm run seed` creates it),
-//     so merely importing it throws ConnectionFailed.
-// Deferring these to dynamic imports inside extractInvoice means loading
-// them only happens when the server action itself runs, never when a
-// test imports resolveSupplierId/findContractId.
 export async function extractInvoice(formData: FormData): Promise<void> {
-  const { redirect } = await import("next/navigation");
-  const { db } = await import("../../lib/db/client");
-  const { classifyAll } = await import("../../lib/rules/classify-all");
-  const { extractInvoiceFromPdf, ExtractionError } = await import("../../lib/extraction/extract");
-
   const entityId = String(formData.get("entityId") ?? "");
   const file = formData.get("pdf");
 
   if (!entityId) {
     redirect("/extraction?error=missing-entity");
-    return;
   }
   if (!(file instanceof File) || file.size === 0) {
     redirect("/extraction?error=missing-file");
-    return;
   }
   if (file.type !== "application/pdf") {
     redirect("/extraction?error=not-pdf");
-    return;
   }
   if (file.size > MAX_PDF_BYTES) {
     redirect("/extraction?error=too-large");
-    return;
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

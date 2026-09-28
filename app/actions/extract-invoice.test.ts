@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createClient } from "@libsql/client";
+
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("../../lib/db/client", () => ({ db: {} }));
+
 import { migrate } from "../../lib/db/migrate";
 import { seed } from "../../lib/db/seed";
 import { resolveSupplierId, findContractId } from "./extract-invoice";
