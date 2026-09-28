@@ -12,6 +12,7 @@ import {
   getNotifications,
   getThresholds,
   saveThresholds,
+  getEntities,
 } from "./queries";
 import { createSession } from "../sessions";
 
@@ -275,6 +276,22 @@ describe("saveThresholds", () => {
       recurringMinInvoices: 4,
       historySample: 8,
     });
+
+    db.close();
+  });
+});
+
+describe("getEntities", () => {
+  it("returns all 4 seeded entities sorted by name", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const entities = await getEntities(db);
+    expect(entities).toHaveLength(4);
+    const names = entities.map((e) => e.name);
+    expect(names).toEqual([...names].sort());
+    expect(names).toContain("Arcadia Télécom");
 
     db.close();
   });
