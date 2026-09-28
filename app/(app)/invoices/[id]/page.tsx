@@ -7,6 +7,7 @@ import { median } from "@/lib/rules/stats";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
 import { ReasonList } from "@/components/reason-list";
+import { ViewPdfButton } from "@/components/view-pdf-button";
 import { formatDateFr, formatEuros, formatIbanGrouped, formatCategory } from "@/lib/format";
 import { signSingleDecision } from "@/app/actions/sign";
 
@@ -61,7 +62,13 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-8 px-4 py-4">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">{context.invoice.invoiceNumber}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-lg font-semibold text-gray-900">{context.invoice.invoiceNumber}</h1>
+          <ViewPdfButton
+            invoiceId={context.invoice.id}
+            className="min-h-[44px] shrink-0 rounded border border-gray-300 px-3 text-sm font-medium text-gray-700"
+          />
+        </div>
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-gray-500">Fournisseur</dt>
