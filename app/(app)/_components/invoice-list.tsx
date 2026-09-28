@@ -11,29 +11,70 @@ import { topReasonMessage } from "@/lib/rules/top-reason";
 
 const LEVEL_ORDER: Level[] = ["red", "orange", "green"];
 
+const ALL = "all";
+
+function groupLabel(level: Level, count: number): string {
+  if (level === "red") return "En alerte";
+  if (level === "orange") return "En vigilance";
+  return `Conforme${count > 1 ? "s" : ""}`;
+}
+
 export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [entityFilter, setEntityFilter] = useState(ALL);
+  const [supplierFilter, setSupplierFilter] = useState(ALL);
+  const [dueFrom, setDueFrom] = useState("");
+  const [dueTo, setDueTo] = useState("");
+
+  const entityOptions = useMemo(
+    () => [...new Set(invoices.map((invoice) => invoice.entityName))].sort((a, b) => a.localeCompare(b)),
+    [invoices]
+  );
+  const supplierOptions = useMemo(
+    () => [...new Set(invoices.map((invoice) => invoice.supplierName))].sort((a, b) => a.localeCompare(b)),
+    [invoices]
+  );
+
+  const hasActiveFilter =
+    entityFilter !== ALL || supplierFilter !== ALL || dueFrom !== "" || dueTo !== "";
+
+  function resetFilters() {
+    setEntityFilter(ALL);
+    setSupplierFilter(ALL);
+    setDueFrom("");
+    setDueTo("");
+  }
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      if (entityFilter !== ALL && invoice.entityName !== entityFilter) return false;
+      if (supplierFilter !== ALL && invoice.supplierName !== supplierFilter) return false;
+      if (dueFrom !== "" && invoice.dueDate < dueFrom) return false;
+      if (dueTo !== "" && invoice.dueDate > dueTo) return false;
+      return true;
+    });
+  }, [invoices, entityFilter, supplierFilter, dueFrom, dueTo]);
 
   const groups = useMemo(() => {
     const byLevel = new Map<Level, PendingInvoiceRow[]>();
     for (const level of LEVEL_ORDER) byLevel.set(level, []);
-    for (const invoice of invoices) {
+    for (const invoice of filteredInvoices) {
       const level = invoice.level ?? "orange";
       byLevel.get(level)?.push(invoice);
     }
     return LEVEL_ORDER.map((level) => ({ level, rows: byLevel.get(level) ?? [] }));
-  }, [invoices]);
+  }, [filteredInvoices]);
 
   const stats = useMemo(() => {
     const counts: Record<Level, number> = { green: 0, orange: 0, red: 0 };
     let total = 0;
-    for (const invoice of invoices) {
+    for (const invoice of filteredInvoices) {
       const level = invoice.level ?? "orange";
       counts[level] += 1;
       total += invoice.amountInclVatCents;
     }
     return { counts, total };
-  }, [invoices]);
+  }, [filteredInvoices]);
 
   const selected = useMemo(
     () => invoices.filter((invoice) => selectedIds.has(invoice.id)),
@@ -56,20 +97,87 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
 
   return (
     <div>
+      <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <label className="mb-1 block text-gray-500">Filiale</label>
+          <select
+            value={entityFilter}
+            onChange={(e) => setEntityFilter(e.target.value)}
+            className="w-full rounded border border-gray-300 p-2 pr-6"
+          >
+            <option value={ALL}>Toutes</option>
+            {entityOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-gray-500">Fournisseur</label>
+          <select
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
+            className="w-full rounded border border-gray-300 p-2 pr-6"
+          >
+            <option value={ALL}>Tous</option>
+            {supplierOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="col-span-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Échéances :</span>
+              <label className="text-gray-500">du</label>
+              <input
+                type="date"
+                value={dueFrom}
+                onChange={(e) => setDueFrom(e.target.value)}
+                className="rounded border border-gray-300 p-2"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-gray-500">au</label>
+              <input
+                type="date"
+                value={dueTo}
+                onChange={(e) => setDueTo(e.target.value)}
+                className="rounded border border-gray-300 p-2"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {hasActiveFilter && (
+        <button type="button" onClick={resetFilters} className="mb-4 text-sm text-blue-600 underline">
+          Réinitialiser les filtres
+        </button>
+      )}
+
       <div className="mb-6 flex flex-wrap gap-4 text-sm text-gray-600">
         <span>
-          {stats.counts.red} rouge · {stats.counts.orange} orange · {stats.counts.green} vert
+          {stats.counts.red} en alerte · {stats.counts.orange} en vigilance · {stats.counts.green}{" "}
+          conforme{stats.counts.green > 1 ? "s" : ""}
         </span>
         <span>
           Total en attente : <Amount cents={stats.total} className="font-medium text-gray-900" />
         </span>
       </div>
 
+      {filteredInvoices.length === 0 && (
+        <p className="text-sm text-gray-500">Aucune facture ne correspond aux filtres.</p>
+      )}
+
       {groups.map(({ level, rows }) =>
         rows.length === 0 ? null : (
           <div key={level} className="mb-8">
             <h2 className="mb-2">
-              <LevelBadge level={level} />
+              <LevelBadge level={level} label={groupLabel(level, rows.length)} />
             </h2>
             <ul className="divide-y divide-gray-200 rounded border border-gray-200">
               {rows.map((invoice) => (

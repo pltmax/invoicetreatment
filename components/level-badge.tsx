@@ -12,14 +12,14 @@ const LEVEL_LABEL: Record<Level, string> = {
   red: "Rouge",
 };
 
-export function LevelBadge({ level }: { level: Level }) {
+export function LevelBadge({ level, label }: { level: Level; label?: string }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span
         className={`inline-block h-3 w-3 rounded-full ${LEVEL_COLOR[level]}`}
         aria-hidden="true"
       />
-      <span className="text-sm text-gray-700">{LEVEL_LABEL[level]}</span>
+      <span className="text-sm text-gray-700">{label ?? LEVEL_LABEL[level]}</span>
     </span>
   );
 }
