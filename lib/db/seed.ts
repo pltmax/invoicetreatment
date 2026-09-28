@@ -122,32 +122,43 @@ interface ContractSeed {
   supplierId: string;
   category: string;
   expectedAmountCents: number;
-  hasHistory: boolean;
+  // Which "months ago" to backfill an approved history invoice for, kept to
+  // only the contracts a pending demo scenario actually reads history from
+  // (see classify-all-scenarios.test.ts and the seed's own comment above
+  // `expectedClassifications`) rather than a full 12 months everywhere:
+  // - novalink/cloudnimbus/fontaine need >= recurringMinInvoices (3) approved
+  //   invoices for the same entity so not-recurring/new-supplier stay quiet
+  //   (novalink, cloudnimbus) or so deviation-history has a baseline to
+  //   compare against (fontaine) — 4 recent months gives headroom.
+  // - aqua needs exactly month 6 to exist and stay approved: the pending
+  //   HIST-AQUA-REALESTATE-M6 scenario reuses that exact invoice_number to
+  //   trigger DUPLICATE_NUMBER.
+  // - solstice-services (a different contract than the pending Solstice
+  //   invoice's con-solstice-realestate) needs a peer baseline for
+  //   deviation-peer to compare the pending invoice against.
+  // Every other contract's pending scenario is driven by something else
+  // entirely (iban_history, risk_events, the invoice's own printed fields
+  // or amount) and never reads groupApprovedInvoices/
+  // subsidiaryApprovedCategories, so no history invoices exist for them.
+  historyMonths?: number[];
 }
 
-const contracts: ContractSeed[] = [
-  { id: "con-novalink-telecom", entityId: "ent-telecom", supplierId: "sup-novalink", category: "telecom_maintenance", expectedAmountCents: 180000, hasHistory: true },
-  { id: "con-cloudnimbus-services", entityId: "ent-services", supplierId: "sup-cloudnimbus", category: "cloud_hosting", expectedAmountCents: 220000, hasHistory: true },
-  { id: "con-fontaine-media", entityId: "ent-media", supplierId: "sup-fontaine", category: "consulting", expectedAmountCents: 150000, hasHistory: true },
-  { id: "con-klaxon-media", entityId: "ent-media", supplierId: "sup-klaxon", category: "marketing", expectedAmountCents: 90000, hasHistory: true },
-  { id: "con-klaxon-services", entityId: "ent-services", supplierId: "sup-klaxon", category: "marketing", expectedAmountCents: 110000, hasHistory: true },
-  { id: "con-aqua-realestate", entityId: "ent-realestate", supplierId: "sup-aqua", category: "facilities", expectedAmountCents: 200000, hasHistory: true },
-  { id: "con-greenwave-services", entityId: "ent-services", supplierId: "sup-greenwave", category: "utilities", expectedAmountCents: 260000, hasHistory: true },
-  { id: "con-meridian-realestate", entityId: "ent-realestate", supplierId: "sup-meridian", category: "fleet", expectedAmountCents: 175000, hasHistory: true },
-  { id: "con-ondine-media", entityId: "ent-media", supplierId: "sup-ondine", category: "office_supplies", expectedAmountCents: 40000, hasHistory: true },
-  { id: "con-solstice-services", entityId: "ent-services", supplierId: "sup-solstice", category: "maintenance", expectedAmountCents: 200000, hasHistory: true },
-  { id: "con-solstice-realestate", entityId: "ent-realestate", supplierId: "sup-solstice", category: "maintenance", expectedAmountCents: 400000, hasHistory: false },
-  { id: "con-corvus-telecom", entityId: "ent-telecom", supplierId: "sup-corvus", category: "it_integration", expectedAmountCents: 300000, hasHistory: true },
-];
+const RECENT_4 = [4, 3, 2, 1];
 
-// Trans Logistique Ouest is a recurring, known supplier that has deliberately
-// never been put on a formal contract.
-const TRANS_LOGISTIQUE = {
-  entityId: "ent-services",
-  supplierId: "sup-translogistique",
-  category: "logistics",
-  baseAmountCents: 130000,
-};
+const contracts: ContractSeed[] = [
+  { id: "con-novalink-telecom", entityId: "ent-telecom", supplierId: "sup-novalink", category: "telecom_maintenance", expectedAmountCents: 180000, historyMonths: RECENT_4 },
+  { id: "con-cloudnimbus-services", entityId: "ent-services", supplierId: "sup-cloudnimbus", category: "cloud_hosting", expectedAmountCents: 220000, historyMonths: RECENT_4 },
+  { id: "con-fontaine-media", entityId: "ent-media", supplierId: "sup-fontaine", category: "consulting", expectedAmountCents: 150000, historyMonths: RECENT_4 },
+  { id: "con-klaxon-media", entityId: "ent-media", supplierId: "sup-klaxon", category: "marketing", expectedAmountCents: 90000 },
+  { id: "con-klaxon-services", entityId: "ent-services", supplierId: "sup-klaxon", category: "marketing", expectedAmountCents: 110000 },
+  { id: "con-aqua-realestate", entityId: "ent-realestate", supplierId: "sup-aqua", category: "facilities", expectedAmountCents: 200000, historyMonths: [6] },
+  { id: "con-greenwave-services", entityId: "ent-services", supplierId: "sup-greenwave", category: "utilities", expectedAmountCents: 260000 },
+  { id: "con-meridian-realestate", entityId: "ent-realestate", supplierId: "sup-meridian", category: "fleet", expectedAmountCents: 175000 },
+  { id: "con-ondine-media", entityId: "ent-media", supplierId: "sup-ondine", category: "office_supplies", expectedAmountCents: 40000 },
+  { id: "con-solstice-services", entityId: "ent-services", supplierId: "sup-solstice", category: "maintenance", expectedAmountCents: 200000, historyMonths: RECENT_4 },
+  { id: "con-solstice-realestate", entityId: "ent-realestate", supplierId: "sup-solstice", category: "maintenance", expectedAmountCents: 400000 },
+  { id: "con-corvus-telecom", entityId: "ent-telecom", supplierId: "sup-corvus", category: "it_integration", expectedAmountCents: 300000 },
+];
 
 interface WriteStatement {
   sql: string;
@@ -181,10 +192,11 @@ function buildHistoryInvoices(
   registeredIban: string,
   registeredSiren: string,
   registeredVatNumber: string,
-  today: Date
+  today: Date,
+  monthsAgoList: number[]
 ): HistoryInvoice[] {
   const rows: HistoryInvoice[] = [];
-  for (let monthsAgo = 12; monthsAgo >= 1; monthsAgo--) {
+  for (const monthsAgo of monthsAgoList) {
     const dueDate = monthsBefore(today, monthsAgo);
     const amount = Math.round(baseAmountCents * VARIANCE[(12 - monthsAgo) % VARIANCE.length]);
     rows.push({
@@ -485,7 +497,7 @@ export async function seed(db: Client): Promise<void> {
 
   const historyInvoices: HistoryInvoice[] = [];
   for (const contract of contracts) {
-    if (!contract.hasHistory) continue;
+    if (!contract.historyMonths || contract.historyMonths.length === 0) continue;
     const supplier = supplierById.get(contract.supplierId);
     if (!supplier) throw new Error(`unknown supplier ${contract.supplierId}`);
     historyInvoices.push(
@@ -499,25 +511,8 @@ export async function seed(db: Client): Promise<void> {
         supplier.registeredIban,
         supplier.siren,
         supplier.vatNumber,
-        today
-      )
-    );
-  }
-  {
-    const supplier = supplierById.get(TRANS_LOGISTIQUE.supplierId);
-    if (!supplier) throw new Error("unknown supplier sup-translogistique");
-    historyInvoices.push(
-      ...buildHistoryInvoices(
-        "hist-translogistique",
-        TRANS_LOGISTIQUE.entityId,
-        TRANS_LOGISTIQUE.supplierId,
-        null,
-        TRANS_LOGISTIQUE.category,
-        TRANS_LOGISTIQUE.baseAmountCents,
-        supplier.registeredIban,
-        supplier.siren,
-        supplier.vatNumber,
-        today
+        today,
+        contract.historyMonths
       )
     );
   }

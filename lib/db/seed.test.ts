@@ -5,7 +5,7 @@ import { seed, expectedClassifications } from "./seed";
 import { isValidSiret } from "../checks/siret";
 
 describe("seed - history", () => {
-  it("creates 13 suppliers, 12 contracts, and 12 months of green history", async () => {
+  it("creates 16 suppliers, 12 contracts, and targeted green history", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
     await seed(db);
@@ -20,18 +20,21 @@ describe("seed - history", () => {
       sql: "SELECT COUNT(*) as count FROM invoices WHERE supplier_id = ? AND status = 'approved'",
       args: ["sup-novalink"],
     });
-    expect(Number(approvedNovalink.rows[0].count)).toBe(12);
+    expect(Number(approvedNovalink.rows[0].count)).toBe(4);
 
     const sessions = await db.execute("SELECT COUNT(*) as count FROM sessions");
     expect(Number(sessions.rows[0].count)).toBe(1);
 
-    // 11 contracts with hasHistory=true, x12 months, + 12 months for Trans Logistique (no contract),
-    // + 3 dedicated invoices for the extra 2026-09-26 session,
-    // + 2 pending invoices (Novalink, CloudNimbus) that classifyAll() also classifies green.
+    // Only the 5 contracts a pending scenario actually reads history from get
+    // any (novalink/cloudnimbus/fontaine/solstice-services x4 months, aqua x1
+    // — see the `historyMonths` comment on ContractSeed in seed.ts), + 3
+    // dedicated invoices for the extra 2026-09-26 session, + 2 pending
+    // invoices (Novalink, CloudNimbus) that classifyAll() also classifies
+    // green: 4+4+4+4+1 + 3 + 2 = 22.
     const greenClassifications = await db.execute(
       "SELECT COUNT(*) as count FROM classifications WHERE level = 'green'"
     );
-    expect(Number(greenClassifications.rows[0].count)).toBe(149);
+    expect(Number(greenClassifications.rows[0].count)).toBe(22);
 
     const greenwaveIbanRows = await db.execute({
       sql: "SELECT COUNT(*) as count FROM iban_history WHERE supplier_id = ?",

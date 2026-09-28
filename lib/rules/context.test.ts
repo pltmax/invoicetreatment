@@ -21,13 +21,10 @@ describe("loadContext", () => {
     await seed(db);
 
     // Use the real current time, matching what seed() used internally to
-    // generate the 12 months of history — see the "12-month boundary" note
-    // in the Global Constraints / ledger for why groupApprovedInvoices is
-    // asserted with a range rather than an exact 12: seed's history dates
-    // are pinned to the 15th of each month, so whenever this test happens
-    // to run after the 15th of the current month, the oldest (12-months-ago)
-    // entry falls just outside the "last 12 months" cutoff and is correctly
-    // excluded — that's the context loader working as specified, not a bug.
+    // generate history. seed.ts only backfills the 4 most recent months for
+    // novalink (see the `historyMonths` comment on ContractSeed there), all
+    // well inside the 12-month riskWindowMonths cutoff regardless of which
+    // day of the current month this test happens to run on.
     const today = new Date();
     const ctx = await loadContext(db, "inv-pending-novalink", today);
 
@@ -35,10 +32,9 @@ describe("loadContext", () => {
     expect(ctx.invoice.entityName).toBe("Arcadia Télécom");
     expect(ctx.supplier.name).toBe("NovaLink Télécom");
     expect(ctx.contract?.id).toBe("con-novalink-telecom");
-    expect(ctx.groupApprovedInvoices.length).toBeGreaterThanOrEqual(11);
-    expect(ctx.groupApprovedInvoices.length).toBeLessThanOrEqual(12);
+    expect(ctx.groupApprovedInvoices).toHaveLength(4);
     expect(ctx.subsidiaryApprovedCategories).toContain("telecom_maintenance");
-    expect(ctx.otherSupplierInvoices).toHaveLength(12);
+    expect(ctx.otherSupplierInvoices).toHaveLength(4);
     expect(ctx.ibanHistory.length).toBeGreaterThanOrEqual(1);
     expect(ctx.invoice.status).toBe("pending");
     expect(ctx.thresholds.riskWindowMonths).toBe(12);
