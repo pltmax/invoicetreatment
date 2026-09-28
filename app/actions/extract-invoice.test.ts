@@ -98,6 +98,37 @@ describe("resolveSupplierId", () => {
 
     db.close();
   });
+
+  it("handles an invalid/non-Luhn printed SIREN by generating a synthetic SIRET", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    // "999999999" fails Luhn validation and would have crashed under the old code
+    const supplierId = await resolveSupplierId(
+      db,
+      fixture({
+        supplierName: "Supplier With Bad SIREN",
+        printedSiren: "999999999",
+        printedIban: "FR9999999999999999999999999",
+        issueDate: "2026-06-15",
+      })
+    );
+
+    expect(supplierId).not.toBe("");
+
+    const supplierRow = await db.execute({
+      sql: "SELECT name, siren, siret FROM suppliers WHERE id = ?",
+      args: [supplierId],
+    });
+    expect(supplierRow.rows).toHaveLength(1);
+    expect(supplierRow.rows[0].name).toBe("Supplier With Bad SIREN");
+    expect(supplierRow.rows[0].siren).toBe("999999999"); // stores the bad SIREN as-is
+    expect(supplierRow.rows[0].siret).toBeTruthy(); // SIRET is generated synthetically
+    expect(String(supplierRow.rows[0].siret)).toMatch(/^\d{14}$/); // SIRET is 14 digits
+
+    db.close();
+  });
 });
 
 describe("findContractId", () => {
