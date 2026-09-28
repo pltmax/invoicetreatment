@@ -38,6 +38,17 @@ const LINKS = [
       />
     ),
   },
+  {
+    href: "/rules",
+    label: "Règles",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 7h10M4 12h16M4 17h7"
+      />
+    ),
+  },
 ];
 
 function Icon({ children }: { children: React.ReactNode }) {
