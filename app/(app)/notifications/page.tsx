@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db/client";
 import { getNotifications } from "@/lib/db/queries";
 import { notificationEmail } from "@/lib/sessions";
@@ -24,25 +25,30 @@ export default async function NotificationsPage() {
       ) : (
         <ul className="divide-y divide-gray-200 rounded border border-gray-200">
           {notifications.map((notification) => (
-            <li key={notification.invoiceId} className="space-y-1 p-4">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-sm text-gray-500">
-                  {notificationEmail(notification.entityName)}
-                </span>
-                <span className="shrink-0 text-xs text-gray-400">
-                  {formatDateTimeFr(notification.sentAt)}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-medium text-gray-900">{notification.invoiceNumber}</span>
-                <Amount cents={notification.amountInclVatCents} className="font-medium text-gray-900" />
-              </div>
-              <div className="flex items-center justify-between gap-2 text-sm">
-                {notification.level ? <LevelBadge level={notification.level} /> : <span />}
-                <span className="text-gray-600">
-                  {notification.outcome === "approved" ? "Approuvée" : "Rejetée"}
-                </span>
-              </div>
+            <li key={notification.invoiceId}>
+              <Link
+                href={`/sessions/${notification.sessionId}`}
+                className="block space-y-1 p-4"
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-sm text-gray-500">
+                    {notificationEmail(notification.entityName)}
+                  </span>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {formatDateTimeFr(notification.sentAt)}
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-medium text-gray-900">{notification.invoiceNumber}</span>
+                  <Amount cents={notification.amountInclVatCents} className="font-medium text-gray-900" />
+                </div>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  {notification.level ? <LevelBadge level={notification.level} /> : <span />}
+                  <span className="text-gray-600">
+                    {notification.outcome === "approved" ? "Approuvée" : "Rejetée"}
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

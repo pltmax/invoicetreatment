@@ -202,6 +202,7 @@ export interface NotificationRow {
   level: Level | null;
   outcome: "approved" | "rejected";
   sentAt: string;
+  sessionId: string;
 }
 
 export async function getNotifications(db: Client): Promise<NotificationRow[]> {
@@ -214,7 +215,8 @@ export async function getNotifications(db: Client): Promise<NotificationRow[]> {
         invoices.amount_incl_vat_cents AS amountInclVatCents,
         classifications.level AS level,
         decisions.outcome AS outcome,
-        decisions.created_at AS sentAt
+        decisions.created_at AS sentAt,
+        decisions.session_id AS sessionId
       FROM decisions
       JOIN invoices ON invoices.id = decisions.invoice_id
       JOIN entities ON entities.id = invoices.entity_id
@@ -235,6 +237,7 @@ export async function getNotifications(db: Client): Promise<NotificationRow[]> {
     level: row.level === null ? null : (String(row.level) as Level),
     outcome: String(row.outcome) as "approved" | "rejected",
     sentAt: String(row.sentAt),
+    sessionId: String(row.sessionId),
   }));
 }
 

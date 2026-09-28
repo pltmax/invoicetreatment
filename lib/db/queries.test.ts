@@ -206,7 +206,7 @@ describe("getNotifications", () => {
 
     const rows = await getPendingInvoices(db);
     const novalink = rows.find((r) => r.invoiceNumber === "PEND-NOVALINK-01")!;
-    await createSession(db, "batch", [
+    const created = await createSession(db, "batch", [
       {
         invoiceId: novalink.id,
         entityName: novalink.entityName,
@@ -222,6 +222,7 @@ describe("getNotifications", () => {
     expect(notifications[0].entityName).toBe("Arcadia Télécom");
     expect(notifications[0].level).toBe("green");
     expect(notifications[0].outcome).toBe("approved");
+    expect(notifications[0].sessionId).toBe(created.sessionId);
 
     db.close();
   });
