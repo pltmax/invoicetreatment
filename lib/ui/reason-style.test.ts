@@ -10,17 +10,12 @@ function hexToRgb(hex: string): Rgb {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-// Resolves a Tailwind class like "bg-orange-500/80" or "text-gray-900" to rgb + alpha.
-function resolve(cls: string): { rgb: Rgb; alpha: number } {
-  const match = cls.match(/^(?:bg|text)-([a-z]+)-(\d+)(?:\/(\d+))?$/);
+// Resolves a Tailwind text color class like "text-orange-800" to rgb.
+function resolveText(cls: string): Rgb {
+  const match = cls.match(/^text-([a-z]+)-(\d+)$/);
   if (!match) throw new Error(`Unparseable color class: ${cls}`);
-  const [, name, shade, alpha] = match;
-  const hex = (colors as unknown as Record<string, Record<string, string>>)[name][shade];
-  return { rgb: hexToRgb(hex), alpha: alpha ? Number(alpha) / 100 : 1 };
-}
-
-function blendOverWhite({ rgb, alpha }: { rgb: Rgb; alpha: number }): Rgb {
-  return rgb.map((c) => Math.round(alpha * c + (1 - alpha) * 255)) as Rgb;
+  const [, name, shade] = match;
+  return hexToRgb((colors as unknown as Record<string, Record<string, string>>)[name][shade]);
 }
 
 function luminance([r, g, b]: Rgb): number {
@@ -36,25 +31,27 @@ function contrast(a: Rgb, b: Rgb): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-function classOf(style: string, prefix: "bg" | "text"): string {
-  const cls = style.split(/\s+/).find((c) => new RegExp(`^${prefix}-[a-z]+-\\d+`).test(c));
-  if (!cls) throw new Error(`No ${prefix} class in "${style}"`);
+function textColorClass(style: string): string {
+  const cls = style.split(/\s+/).find((c) => /^text-[a-z]+-\d+$/.test(c));
+  if (!cls) throw new Error(`No text color class in "${style}"`);
   return cls;
 }
 
+const WHITE: Rgb = [255, 255, 255];
+
 describe("REASON_STYLE", () => {
-  it("renders green reasons without a box", () => {
-    expect(REASON_STYLE.green).not.toMatch(/\bbg-/);
-    expect(REASON_STYLE.green).not.toMatch(/\bborder\b/);
+  it.each<Level>(["green", "orange", "red"])("renders %s reasons as plain text, without a box", (level) => {
+    expect(REASON_STYLE[level]).not.toMatch(/\bbg-/);
+    expect(REASON_STYLE[level]).not.toMatch(/\bborder\b/);
   });
 
-  it.each<Level>(["orange", "red"])("boxes %s reasons at 80%% opacity", (level) => {
-    expect(classOf(REASON_STYLE[level], "bg")).toMatch(/\/80$/);
+  it("tints orange and red reasons with their own hue", () => {
+    expect(textColorClass(REASON_STYLE.orange)).toMatch(/^text-orange-/);
+    expect(textColorClass(REASON_STYLE.red)).toMatch(/^text-red-/);
   });
 
-  it.each<Level>(["orange", "red"])("keeps %s text at WCAG AA contrast (>= 4.5:1)", (level) => {
-    const bg = blendOverWhite(resolve(classOf(REASON_STYLE[level], "bg")));
-    const fg = resolve(classOf(REASON_STYLE[level], "text")).rgb;
-    expect(contrast(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  it.each<Level>(["green", "orange", "red"])("keeps %s text at WCAG AA contrast on white (>= 4.5:1)", (level) => {
+    const fg = resolveText(textColorClass(REASON_STYLE[level]));
+    expect(contrast(fg, WHITE)).toBeGreaterThanOrEqual(4.5);
   });
 });

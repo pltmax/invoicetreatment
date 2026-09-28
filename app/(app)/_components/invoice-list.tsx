@@ -194,28 +194,28 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
                     />
                   )}
                   <Link href={`/invoices/${invoice.id}`} className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate font-medium text-gray-900">{invoice.supplierName}</span>
-                      <Amount
-                        cents={invoice.amountInclVatCents}
-                        className="shrink-0 font-medium text-gray-900"
-                      />
-                    </div>
+                    <span className="block truncate font-medium text-gray-900">{invoice.supplierName}</span>
                     <div className="mt-1 text-sm text-gray-500">
                       {invoice.entityName} · {formatDateFr(invoice.dueDate)}
                     </div>
                     <div className="mt-2">
-                      <ReasonList reasons={topReasons(invoice.reasons)} />
+                      <ReasonList reasons={topReasons(invoice.reasons)} variant="summary" />
                     </div>
                   </Link>
-                  {level === "red" && (
-                    <Link
-                      href={`/invoices/${invoice.id}`}
-                      className="shrink-0 self-center rounded border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700"
-                    >
-                      Examiner
+                  {/* Amount and button share one right-aligned column so their edges line up. */}
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <Link href={`/invoices/${invoice.id}`}>
+                      <Amount cents={invoice.amountInclVatCents} className="font-medium text-gray-900" />
                     </Link>
-                  )}
+                    {level === "red" && (
+                      <Link
+                        href={`/invoices/${invoice.id}`}
+                        className="flex min-h-[44px] items-center rounded border border-gray-300 px-3 text-sm font-medium text-gray-700"
+                      >
+                        Examiner
+                      </Link>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

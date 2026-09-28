@@ -36,7 +36,7 @@ export function SessionReview({ invoices }: { invoices: PendingInvoiceRow[] }) {
                 </div>
               )}
               <div className="mt-2">
-                <ReasonList reasons={topReasons(invoice.reasons)} />
+                <ReasonList reasons={topReasons(invoice.reasons)} variant="summary" />
               </div>
             </Link>
             <button

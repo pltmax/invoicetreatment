@@ -40,30 +40,37 @@ export async function loadContext(
   today: Date,
   preloadedThresholds?: Thresholds
 ): Promise<InvoiceContext> {
-  const invoiceResult = await db.execute({
-    sql: `
-      SELECT
-        invoices.id AS id,
-        invoices.entity_id AS entityId,
-        entities.name AS entityName,
-        invoices.supplier_id AS supplierId,
-        invoices.contract_id AS contractId,
-        invoices.invoice_number AS invoiceNumber,
-        invoices.category AS category,
-        invoices.amount_excl_vat_cents AS amountExclVatCents,
-        invoices.amount_incl_vat_cents AS amountInclVatCents,
-        invoices.due_date AS dueDate,
-        invoices.issue_date AS issueDate,
-        invoices.printed_iban AS printedIban,
-        invoices.printed_siren AS printedSiren,
-        invoices.printed_vat_number AS printedVatNumber,
-        invoices.status AS status
-      FROM invoices
-      JOIN entities ON entities.id = invoices.entity_id
-      WHERE invoices.id = ?
-    `,
-    args: [invoiceId],
-  });
+  // Fetched concurrently: neither query depends on the other's result, and
+  // each db.execute() is a real network round trip against a remote
+  // (Turso) database in production — running them one after another would
+  // add their latencies instead of overlapping them.
+  const [invoiceResult, thresholds] = await Promise.all([
+    db.execute({
+      sql: `
+        SELECT
+          invoices.id AS id,
+          invoices.entity_id AS entityId,
+          entities.name AS entityName,
+          invoices.supplier_id AS supplierId,
+          invoices.contract_id AS contractId,
+          invoices.invoice_number AS invoiceNumber,
+          invoices.category AS category,
+          invoices.amount_excl_vat_cents AS amountExclVatCents,
+          invoices.amount_incl_vat_cents AS amountInclVatCents,
+          invoices.due_date AS dueDate,
+          invoices.issue_date AS issueDate,
+          invoices.printed_iban AS printedIban,
+          invoices.printed_siren AS printedSiren,
+          invoices.printed_vat_number AS printedVatNumber,
+          invoices.status AS status
+        FROM invoices
+        JOIN entities ON entities.id = invoices.entity_id
+        WHERE invoices.id = ?
+      `,
+      args: [invoiceId],
+    }),
+    preloadedThresholds ?? loadThresholds(db),
+  ]);
   const invoiceRow = invoiceResult.rows[0];
   if (!invoiceRow) {
     throw new Error(`invoice not found: ${invoiceId}`);
@@ -86,8 +93,6 @@ export async function loadContext(
     printedVatNumber: String(invoiceRow.printedVatNumber),
     status: String(invoiceRow.status),
   };
-
-  const thresholds = preloadedThresholds ?? (await loadThresholds(db));
 
   const cutoff = monthsAgoIso(today, thresholds.riskWindowMonths);
   const hasContract = invoice.contractId !== null;

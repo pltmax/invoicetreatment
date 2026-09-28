@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db/client";
 import { loadContext } from "@/lib/rules/context";
-import { getClassification, getDecisionSessionId } from "@/lib/db/queries";
+import { getClassification, getDecisionSessionId, getInvoicesByIds } from "@/lib/db/queries";
+import { batchReviewHref, parseBatchIds } from "@/lib/batch-selection";
 import { median } from "@/lib/rules/stats";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
@@ -12,17 +13,33 @@ import { signSingleDecision } from "@/app/actions/sign";
 
 export const dynamic = "force-dynamic";
 
-export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function InvoiceDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ batch?: string }>;
+}) {
   const { id } = await params;
+  const { batch } = await searchParams;
 
-  let context;
-  try {
-    context = await loadContext(db, id, new Date());
-  } catch {
+  // These three don't depend on each other's result, and each one is a
+  // real network round trip against a remote (Turso) database in
+  // production — run them concurrently instead of stacking their latency.
+  const [batchInvoices, contextResult, classification] = await Promise.all([
+    // Arriving from a batch session: restore that selection on return,
+    // minus invoices that are no longer eligible (decided in the meantime).
+    getInvoicesByIds(db, parseBatchIds(batch)),
+    loadContext(db, id, new Date()).catch(() => null),
+    getClassification(db, id),
+  ]);
+  const batchIds = batchInvoices.map((invoice) => invoice.id);
+
+  if (!contextResult) {
     notFound();
   }
+  const context = contextResult;
 
-  const classification = await getClassification(db, id);
   const isDecided = context.invoice.status !== "pending";
   const existingSessionId = isDecided ? await getDecisionSessionId(db, id) : null;
 
@@ -47,11 +64,6 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       medianAmount: median(entry.amounts) ?? 0,
     }))
     .sort((a, b) => b.medianAmount - a.medianAmount);
-  const maxPeerAmount = Math.max(
-    context.invoice.amountExclVatCents,
-    ...peerRows.map((r) => r.medianAmount),
-    1
-  );
 
   const currentIban = context.ibanHistory[0]?.iban ?? null;
   const sirenMismatch = context.invoice.printedSiren !== context.supplier.siren;
@@ -59,10 +71,30 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const ibanMismatch = currentIban !== null && context.invoice.printedIban !== currentIban;
 
   return (
-    <div className="space-y-8 px-4 py-4">
+    <div className="mx-auto max-w-7xl space-y-8 px-6 py-4">
+      {batchIds.length > 0 && (
+        <Link
+          href={batchReviewHref(batchIds)}
+          className="inline-flex min-h-[44px] items-center gap-1 text-base font-medium text-blue-600"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-[1em] w-[1em] shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+          Retour à la validation ({batchIds.length} facture{batchIds.length === 1 ? "" : "s"})
+        </Link>
+      )}
       <div>
         <h1 className="text-lg font-semibold text-gray-900">{context.invoice.invoiceNumber}</h1>
-        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+        <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-gray-500">Fournisseur</dt>
             <dd className="text-gray-900">{context.supplier.name}</dd>
@@ -96,9 +128,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <dd className="text-gray-900">{formatCategory(context.invoice.category)}</dd>
           </div>
         </dl>
-      </div>
-
-      <div>
+        <hr className="border-t border-gray-200 my-5" />
         <h2 className="mb-2 text-sm font-semibold text-gray-900">Classification</h2>
         {classification ? (
           <div>
@@ -110,10 +140,8 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         ) : (
           <p className="text-sm text-gray-500">Aucune classification disponible.</p>
         )}
-      </div>
-
-      <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">Historique à cette filiale</h2>
+      <hr className="border-t border-gray-200 my-5" />
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">Historique avec cette filiale</h2>
         {historyRows.length === 0 ? (
           <p className="text-sm text-gray-500">
             Aucun historique disponible pour ce fournisseur à cette filiale.
@@ -138,49 +166,37 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             </tbody>
           </table>
         )}
-      </div>
+        <hr className="border-t border-gray-200 my-5" />
 
-      <div>
-        <h2 className="mb-2 text-sm font-semibold text-gray-900">Comparaison entre filiales</h2>
+        <h2 className="mb-2 text-sm font-semibold text-gray-900">Comparaison entre filiales :</h2>
         {peerRows.length === 0 ? (
           <p className="text-sm text-gray-500">Aucune facture comparable dans les autres filiales.</p>
         ) : (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="w-32 shrink-0 truncate text-sm font-medium text-gray-900">
-                {context.invoice.entityName} (actuelle)
-              </span>
-              <div className="h-2 flex-1 rounded bg-gray-100">
-                <div
-                  className="h-2 rounded bg-blue-600"
-                  style={{ width: `${(context.invoice.amountExclVatCents / maxPeerAmount) * 100}%` }}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="hidden sm:block" aria-hidden="true" />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-sm font-semibold text-gray-900">
+                  {context.invoice.entityName} (actuelle)
+                </span>
+                <Amount
+                  cents={context.invoice.amountExclVatCents}
+                  className="shrink-0 text-sm font-semibold text-gray-900"
                 />
               </div>
-              <Amount
-                cents={context.invoice.amountExclVatCents}
-                className="w-24 shrink-0 text-right text-sm"
-              />
-            </div>
-            {peerRows.map((row) => (
-              <div key={row.entityId} className="flex items-center gap-3">
-                <span className="w-32 shrink-0 truncate text-sm text-gray-600">{row.entityName}</span>
-                <div className="h-2 flex-1 rounded bg-gray-100">
-                  <div
-                    className="h-2 rounded bg-gray-400"
-                    style={{ width: `${(row.medianAmount / maxPeerAmount) * 100}%` }}
-                  />
+              {peerRows.map((row) => (
+                <div key={row.entityId} className="flex items-center justify-between gap-3">
+                  <span className="truncate text-sm text-gray-600">{row.entityName}</span>
+                  <Amount cents={row.medianAmount} className="shrink-0 text-sm text-gray-600" />
                 </div>
-                <Amount cents={row.medianAmount} className="w-24 shrink-0 text-right text-sm text-gray-600" />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
-      </div>
-
-      <div>
+<hr className="border-t border-gray-200 my-5" />
         <h2 className="mb-2 text-sm font-semibold text-gray-900">Contrat</h2>
         {context.contract ? (
-          <dl className="grid grid-cols-2 gap-3 text-sm">
+          <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
             <div>
               <dt className="text-gray-500">Catégorie</dt>
               <dd className="text-gray-900">{formatCategory(context.contract.category)}</dd>
@@ -197,45 +213,43 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
         ) : (
           <p className="text-sm text-gray-500">Aucun contrat rattaché.</p>
         )}
-      </div>
-
-      <div>
+<hr className="border-t border-gray-200 my-5" />
         <h2 className="mb-2 text-sm font-semibold text-gray-900">Identité du fournisseur</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="py-1 font-normal"></th>
-              <th className="py-1 font-normal">Registre</th>
-              <th className="py-1 font-normal">Facture</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-gray-100">
-              <td className="py-2 text-gray-500">SIREN</td>
-              <td className="py-2 text-gray-900">{context.supplier.siren}</td>
-              <td className={`py-2 ${sirenMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
-                {context.invoice.printedSiren}
-              </td>
-            </tr>
-            <tr className="border-t border-gray-100">
-              <td className="py-2 text-gray-500">TVA</td>
-              <td className="py-2 text-gray-900">{context.supplier.vatNumber}</td>
-              <td className={`py-2 ${vatMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
-                {context.invoice.printedVatNumber}
-              </td>
-            </tr>
-            <tr className="border-t border-gray-100">
-              <td className="py-2 text-gray-500">IBAN</td>
-              <td className="py-2 text-gray-900">{currentIban ? formatIbanGrouped(currentIban) : "—"}</td>
-              <td className={`py-2 ${ibanMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
-                {formatIbanGrouped(context.invoice.printedIban)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500">
+                <th className="py-1 font-normal"></th>
+                <th className="py-1 font-normal">Registre</th>
+                <th className="py-1 font-normal">Facture</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-gray-100">
+                <td className="py-2 text-gray-500">SIREN</td>
+                <td className="py-2 text-gray-900">{context.supplier.siren}</td>
+                <td className={`py-2 ${sirenMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
+                  {context.invoice.printedSiren}
+                </td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="py-2 text-gray-500">TVA</td>
+                <td className="py-2 text-gray-900">{context.supplier.vatNumber}</td>
+                <td className={`py-2 ${vatMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
+                  {context.invoice.printedVatNumber}
+                </td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="py-2 text-gray-500">IBAN</td>
+                <td className="py-2 text-gray-900">{currentIban ? formatIbanGrouped(currentIban) : "—"}</td>
+                <td className={`py-2 ${ibanMismatch ? "bg-red-50 font-medium text-red-700" : "text-gray-900"}`}>
+                  {formatIbanGrouped(context.invoice.printedIban)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <hr className="border-t border-gray-200 my-5" />
         <h2 className="mb-2 text-sm font-semibold text-gray-900">Historique IBAN</h2>
         {context.ibanHistory.length === 0 ? (
           <p className="text-sm text-gray-500">Aucun historique d&apos;IBAN disponible.</p>
@@ -252,9 +266,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             ))}
           </ul>
         )}
-      </div>
-
-      <div>
+<hr className="border-t border-gray-200 my-5" />
         <h2 className="mb-3 text-sm font-semibold text-gray-900">Décision</h2>
         {isDecided ? (
           <p className="text-sm text-gray-600">

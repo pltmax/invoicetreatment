@@ -1,9 +1,18 @@
 // lib/rules/context.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createClient } from "@libsql/client";
 import { migrate } from "../db/migrate";
 import { seed } from "../db/seed";
 import { loadContext } from "./context";
+
+// Each db.execute()/db.batch() call is a real network round trip against a
+// remote (Turso) database in production — sequential awaits stack up
+// latency that concurrent calls would overlap instead. This reads the SQL
+// text off each call to db.execute to tell the invoice-row query apart from
+// the thresholds query without depending on call order.
+function sqlTextOf(arg: unknown): string {
+  return typeof arg === "string" ? arg : (arg as { sql: string }).sql;
+}
 
 describe("loadContext", () => {
   it("loads the full context for a known pending invoice with a contract and group-wide history", async () => {
@@ -48,6 +57,33 @@ describe("loadContext", () => {
     expect(ctx.contract).toBeNull();
     expect(ctx.groupApprovedInvoices).toHaveLength(0);
 
+    db.close();
+  });
+
+  it("fetches the invoice row and the thresholds row concurrently, not one after another", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const events: string[] = [];
+    const originalExecute = db.execute.bind(db);
+    vi.spyOn(db, "execute").mockImplementation(async (arg: unknown) => {
+      const label = sqlTextOf(arg).includes("FROM thresholds") ? "thresholds" : "invoice";
+      events.push(`${label}:start`);
+      const result = await originalExecute(arg as never);
+      events.push(`${label}:end`);
+      return result;
+    });
+
+    await loadContext(db, "inv-pending-novalink", new Date());
+
+    const firstEnd = Math.min(events.indexOf("invoice:end"), events.indexOf("thresholds:end"));
+    // If either call had already finished before the other one even started,
+    // they ran sequentially rather than concurrently.
+    expect(events.indexOf("invoice:start")).toBeLessThan(firstEnd);
+    expect(events.indexOf("thresholds:start")).toBeLessThan(firstEnd);
+
+    vi.restoreAllMocks();
     db.close();
   });
 });

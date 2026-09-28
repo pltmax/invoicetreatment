@@ -11,7 +11,7 @@ export default function notRecurringRule(ctx: InvoiceContext): Reason | null {
   return {
     code: "NOT_RECURRING",
     level: "orange",
-    message: `Seulement ${countAtSubsidiary} facture${countAtSubsidiary === 1 ? "" : "s"} approuvée${countAtSubsidiary === 1 ? "" : "s"} pour cette filiale sur 12 mois`,
+    message: `${countAtSubsidiary} facture${countAtSubsidiary === 1 ? "" : "s"} approuvée${countAtSubsidiary === 1 ? "" : "s"} pour cette filiale sur 12 mois`,
     data: { countAtSubsidiary, threshold: ctx.thresholds.recurringMinInvoices },
   };
 }
