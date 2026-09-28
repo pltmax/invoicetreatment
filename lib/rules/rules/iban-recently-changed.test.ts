@@ -40,4 +40,15 @@ describe("iban-recently-changed rule", () => {
     const ctx = buildContext({ ibanHistory: [] });
     expect(ibanRecentlyChangedRule(ctx, TODAY)).toBeNull();
   });
+
+  it("uses a custom window from context instead of the default 90 days", () => {
+    const ctx = buildContext({
+      ibanHistory: [{ iban: "FR1420041010050500013M02606", effectiveFrom: "2026-02-15" }],
+      thresholds: { ibanRecentChangeDays: 120 },
+    });
+    // 2026-02-15 -> 2026-06-15 is exactly 120 days; the default 90-day window would miss it.
+    const reason = ibanRecentlyChangedRule(ctx, TODAY);
+    expect(reason?.code).toBe("IBAN_RECENTLY_CHANGED");
+    expect(reason?.level).toBe("red");
+  });
 });

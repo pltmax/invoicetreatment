@@ -43,4 +43,15 @@ describe("deviation-peer rule", () => {
     });
     expect(deviationPeerRule(ctx)).toBeNull();
   });
+
+  it("uses a custom orange threshold from context instead of the default 15%", () => {
+    const ctx = buildContext({
+      invoice: { amountExclVatCents: 110_000 },
+      groupApprovedInvoices: peersAt("ent-other", "Filiale Voisine", 100_000),
+      thresholds: { deviationOrange: 0.05 },
+    });
+    const reason = deviationPeerRule(ctx);
+    expect(reason?.code).toBe("DEVIATION_PEER");
+    expect(reason?.level).toBe("orange");
+  });
 });

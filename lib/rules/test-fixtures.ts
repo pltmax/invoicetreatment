@@ -2,6 +2,7 @@
 import { generateValidSiren } from "../checks/siren";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
+import { DEFAULT_THRESHOLDS, type Thresholds } from "./thresholds";
 import type { InvoiceContext } from "./types";
 
 const DEFAULT_SIREN = generateValidSiren("55210055");
@@ -27,6 +28,7 @@ interface ContextOverrides {
   groupApprovedInvoices?: InvoiceContext["groupApprovedInvoices"];
   subsidiaryApprovedCategories?: InvoiceContext["subsidiaryApprovedCategories"];
   otherSupplierInvoices?: InvoiceContext["otherSupplierInvoices"];
+  thresholds?: Partial<Thresholds>;
 }
 
 export function buildContext(overrides: ContextOverrides = {}): InvoiceContext {
@@ -75,5 +77,6 @@ export function buildContext(overrides: ContextOverrides = {}): InvoiceContext {
       })),
     subsidiaryApprovedCategories: overrides.subsidiaryApprovedCategories ?? [invoice.category],
     otherSupplierInvoices: overrides.otherSupplierInvoices ?? [],
+    thresholds: { ...DEFAULT_THRESHOLDS, ...overrides.thresholds },
   };
 }

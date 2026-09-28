@@ -32,4 +32,12 @@ describe("not-recurring rule", () => {
     const ctx = buildContext({ groupApprovedInvoices: [] });
     expect(notRecurringRule(ctx)).toBeNull();
   });
+
+  it("uses a custom minimum from context instead of the default 3", () => {
+    const ctx = buildContext({
+      groupApprovedInvoices: [invoiceAt("ent-1"), invoiceAt("ent-1")],
+      thresholds: { recurringMinInvoices: 2 },
+    });
+    expect(notRecurringRule(ctx)).toBeNull();
+  });
 });

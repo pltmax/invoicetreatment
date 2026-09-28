@@ -4,7 +4,7 @@ import type { Client, InValue } from "@libsql/client";
 import { generateValidSiren } from "../checks/siren";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
-import { RULES_VERSION } from "../rules/thresholds";
+import { RULES_VERSION, DEFAULT_THRESHOLDS } from "../rules/thresholds";
 import { classifyAll } from "../rules/classify-all";
 
 export type ClassificationLevel = "green" | "orange" | "red";
@@ -418,6 +418,23 @@ export async function seed(db: Client): Promise<void> {
       args: [entity.id, entity.name, entity.sector],
     });
   }
+
+  statements.push({
+    sql: `INSERT INTO thresholds
+      (id, deviation_orange, deviation_red, new_supplier_amount_cents, exceptional_amount_cents, iban_recent_change_days, risk_window_months, duplicate_window_days, recurring_min_invoices, history_sample)
+      VALUES ('default', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      DEFAULT_THRESHOLDS.deviationOrange,
+      DEFAULT_THRESHOLDS.deviationRed,
+      DEFAULT_THRESHOLDS.newSupplierAmountCents,
+      DEFAULT_THRESHOLDS.exceptionalAmountCents,
+      DEFAULT_THRESHOLDS.ibanRecentChangeDays,
+      DEFAULT_THRESHOLDS.riskWindowMonths,
+      DEFAULT_THRESHOLDS.duplicateWindowDays,
+      DEFAULT_THRESHOLDS.recurringMinInvoices,
+      DEFAULT_THRESHOLDS.historySample,
+    ],
+  });
 
   for (const supplier of suppliers) {
     statements.push({

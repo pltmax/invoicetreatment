@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db/client";
 import { loadContext } from "@/lib/rules/context";
 import { getClassification, getDecisionSessionId } from "@/lib/db/queries";
-import { HISTORY_SAMPLE } from "@/lib/rules/thresholds";
 import { median } from "@/lib/rules/stats";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
@@ -31,7 +30,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
     .filter(
       (row) => row.entityId === context.invoice.entityId && row.category === context.invoice.category
     )
-    .slice(0, HISTORY_SAMPLE);
+    .slice(0, context.thresholds.historySample);
 
   const peerByEntity = new Map<string, { entityName: string; amounts: number[] }>();
   for (const row of context.groupApprovedInvoices) {

@@ -1,5 +1,4 @@
 import type { InvoiceContext, Reason } from "../types";
-import { DUPLICATE_WINDOW_DAYS } from "../thresholds";
 import { formatEuros } from "../../format";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -15,7 +14,7 @@ export default function duplicateAmountRule(
     (i) =>
       i.entityId === ctx.invoice.entityId &&
       i.amountInclVatCents === ctx.invoice.amountInclVatCents &&
-      daysBetween(i.issueDate, ctx.invoice.issueDate) <= DUPLICATE_WINDOW_DAYS
+      daysBetween(i.issueDate, ctx.invoice.issueDate) <= ctx.thresholds.duplicateWindowDays
   );
   if (!match) return null;
 

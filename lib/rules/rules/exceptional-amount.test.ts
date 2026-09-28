@@ -19,4 +19,14 @@ describe("exceptional-amount rule", () => {
     const ctx = buildContext({ invoice: { amountExclVatCents: 100_000 } });
     expect(exceptionalAmountRule(ctx)).toBeNull();
   });
+
+  it("uses a custom threshold from context instead of the default 50 000 €", () => {
+    const ctx = buildContext({
+      invoice: { amountExclVatCents: 100_000 },
+      thresholds: { exceptionalAmountCents: 50_000 },
+    });
+    const reason = exceptionalAmountRule(ctx);
+    expect(reason?.code).toBe("EXCEPTIONAL_AMOUNT");
+    expect(reason?.level).toBe("red");
+  });
 });

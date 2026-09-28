@@ -55,4 +55,26 @@ describe("duplicate-amount rule", () => {
     });
     expect(duplicateAmountRule(ctx)).toBeNull();
   });
+
+  it("uses a custom window from context instead of the default 60 days", () => {
+    const ctx = buildContext({
+      invoice: { issueDate: "2026-05-31", amountInclVatCents: 120_000 },
+      otherSupplierInvoices: [
+        {
+          id: "inv-other",
+          invoiceNumber: "INV-999",
+          status: "approved",
+          amountInclVatCents: 120_000,
+          // 77 days before 2026-05-31 — outside the default 60-day window,
+          // inside a custom 90-day one.
+          issueDate: "2026-03-15",
+          entityId: "ent-1",
+        },
+      ],
+      thresholds: { duplicateWindowDays: 90 },
+    });
+    const reason = duplicateAmountRule(ctx);
+    expect(reason?.code).toBe("DUPLICATE_AMOUNT");
+    expect(reason?.level).toBe("red");
+  });
 });

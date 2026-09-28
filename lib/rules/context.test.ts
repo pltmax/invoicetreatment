@@ -32,6 +32,7 @@ describe("loadContext", () => {
     expect(ctx.otherSupplierInvoices).toHaveLength(12);
     expect(ctx.ibanHistory.length).toBeGreaterThanOrEqual(1);
     expect(ctx.invoice.status).toBe("pending");
+    expect(ctx.thresholds.riskWindowMonths).toBe(12);
 
     db.close();
   });

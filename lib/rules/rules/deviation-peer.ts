@@ -1,6 +1,5 @@
 import type { InvoiceContext, Reason } from "../types";
 import { median } from "../stats";
-import { DEVIATION_ORANGE, DEVIATION_RED } from "../thresholds";
 import { formatEuros, formatPercent } from "../../format";
 
 export default function deviationPeerRule(ctx: InvoiceContext): Reason | null {
@@ -14,7 +13,7 @@ export default function deviationPeerRule(ctx: InvoiceContext): Reason | null {
 
   const amount = ctx.invoice.amountExclVatCents;
   const deviation = (amount - baseline) / baseline;
-  if (deviation <= DEVIATION_ORANGE) return null;
+  if (deviation <= ctx.thresholds.deviationOrange) return null;
 
   const otherEntities = [...new Set(peers.map((i) => i.entityName))];
   const message = `Montant ${formatEuros(amount)} HT, ${formatPercent(deviation)} au-dessus des autres filiales (${otherEntities.join(", ")} : médiane ${formatEuros(baseline)} HT)`;
@@ -25,7 +24,7 @@ export default function deviationPeerRule(ctx: InvoiceContext): Reason | null {
     otherEntities,
   };
 
-  if (deviation > DEVIATION_RED) {
+  if (deviation > ctx.thresholds.deviationRed) {
     return { code: "DEVIATION_PEER_HIGH", level: "red", message, data };
   }
   return { code: "DEVIATION_PEER", level: "orange", message, data };

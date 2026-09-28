@@ -35,4 +35,15 @@ describe("new-supplier rule", () => {
     const ctx = buildContext({ invoice: { amountExclVatCents: 800_000 } });
     expect(newSupplierRule(ctx)).toBeNull();
   });
+
+  it("uses a custom threshold from context instead of the default 5 000 €", () => {
+    const ctx = buildContext({
+      invoice: { amountExclVatCents: 300_000 },
+      groupApprovedInvoices: [],
+      thresholds: { newSupplierAmountCents: 100_000 },
+    });
+    const reason = newSupplierRule(ctx);
+    expect(reason?.code).toBe("NEW_SUPPLIER_LARGE");
+    expect(reason?.level).toBe("red");
+  });
 });

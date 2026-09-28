@@ -27,4 +27,15 @@ describe("supplier-risk rule", () => {
     const ctx = buildContext({ riskEvents: [] });
     expect(supplierRiskRule(ctx, TODAY)).toBeNull();
   });
+
+  it("uses a custom window from context instead of the default 12 months", () => {
+    const ctx = buildContext({
+      riskEvents: [{ eventDate: "2025-01-15", description: "Ancien incident." }],
+      thresholds: { riskWindowMonths: 18 },
+    });
+    // 2025-01-15 -> 2026-06-15 is 17 months; the default 12-month window would miss it.
+    const reason = supplierRiskRule(ctx, TODAY);
+    expect(reason?.code).toBe("SUPPLIER_RISK");
+    expect(reason?.level).toBe("red");
+  });
 });

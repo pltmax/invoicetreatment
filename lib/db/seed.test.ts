@@ -145,3 +145,21 @@ describe("seed - session signature_ref", () => {
     db.close();
   });
 });
+
+describe("seed - thresholds", () => {
+  it("inserts the default thresholds row", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await db.execute(
+      "SELECT deviation_orange as deviationOrange, deviation_red as deviationRed, exceptional_amount_cents as exceptionalAmountCents FROM thresholds WHERE id = 'default'"
+    );
+    expect(rows.rows.length).toBe(1);
+    expect(Number(rows.rows[0].deviationOrange)).toBe(0.15);
+    expect(Number(rows.rows[0].deviationRed)).toBe(0.4);
+    expect(Number(rows.rows[0].exceptionalAmountCents)).toBe(50_000_00);
+
+    db.close();
+  });
+});

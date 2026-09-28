@@ -1,8 +1,8 @@
 // lib/rules/context.ts
 import "server-only";
 import type { Client } from "@libsql/client";
-import { RISK_WINDOW_MONTHS } from "./thresholds";
 import type { InvoiceContext } from "./types";
+import type { Thresholds } from "./thresholds";
 
 function monthsAgoIso(today: Date, months: number): string {
   const d = new Date(today);
@@ -62,7 +62,26 @@ export async function loadContext(
     status: String(invoiceRow.status),
   };
 
-  const cutoff = monthsAgoIso(today, RISK_WINDOW_MONTHS);
+  const thresholdsResult = await db.execute(
+    "SELECT deviation_orange AS deviationOrange, deviation_red AS deviationRed, new_supplier_amount_cents AS newSupplierAmountCents, exceptional_amount_cents AS exceptionalAmountCents, iban_recent_change_days AS ibanRecentChangeDays, risk_window_months AS riskWindowMonths, duplicate_window_days AS duplicateWindowDays, recurring_min_invoices AS recurringMinInvoices, history_sample AS historySample FROM thresholds WHERE id = 'default'"
+  );
+  const thresholdsRow = thresholdsResult.rows[0];
+  if (!thresholdsRow) {
+    throw new Error("thresholds row not found — did seed() run?");
+  }
+  const thresholds: Thresholds = {
+    deviationOrange: Number(thresholdsRow.deviationOrange),
+    deviationRed: Number(thresholdsRow.deviationRed),
+    newSupplierAmountCents: Number(thresholdsRow.newSupplierAmountCents),
+    exceptionalAmountCents: Number(thresholdsRow.exceptionalAmountCents),
+    ibanRecentChangeDays: Number(thresholdsRow.ibanRecentChangeDays),
+    riskWindowMonths: Number(thresholdsRow.riskWindowMonths),
+    duplicateWindowDays: Number(thresholdsRow.duplicateWindowDays),
+    recurringMinInvoices: Number(thresholdsRow.recurringMinInvoices),
+    historySample: Number(thresholdsRow.historySample),
+  };
+
+  const cutoff = monthsAgoIso(today, thresholds.riskWindowMonths);
   const hasContract = invoice.contractId !== null;
 
   const statements = [
@@ -79,7 +98,7 @@ export async function loadContext(
       args: [invoice.supplierId],
     },
     {
-      // Rules (deviation-history.ts's HISTORY_SAMPLE slice) depend on this DESC ordering to mean "most recent".
+      // Rules (deviation-history.ts's historySample slice) depend on this DESC ordering to mean "most recent".
       sql: `
         SELECT invoices.entity_id AS entityId, entities.name AS entityName, invoices.category AS category,
                invoices.amount_excl_vat_cents AS amountExclVatCents, invoices.due_date AS dueDate
@@ -163,5 +182,6 @@ export async function loadContext(
       issueDate: String(row.issueDate),
       entityId: String(row.entityId),
     })),
+    thresholds,
   };
 }

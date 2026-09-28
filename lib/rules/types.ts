@@ -1,4 +1,5 @@
 // lib/rules/types.ts
+import type { Thresholds } from "./thresholds";
 
 export type Level = "green" | "orange" | "red";
 
@@ -103,4 +104,5 @@ export interface InvoiceContext {
   groupApprovedInvoices: GroupApprovedInvoice[];
   subsidiaryApprovedCategories: string[];
   otherSupplierInvoices: OtherSupplierInvoice[];
+  thresholds: Thresholds;
 }

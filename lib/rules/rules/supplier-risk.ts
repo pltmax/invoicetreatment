@@ -1,5 +1,4 @@
 import type { InvoiceContext, Reason } from "../types";
-import { RISK_WINDOW_MONTHS } from "../thresholds";
 
 function monthsBetween(from: Date, to: Date): number {
   return (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
@@ -8,7 +7,7 @@ function monthsBetween(from: Date, to: Date): number {
 export default function supplierRiskRule(ctx: InvoiceContext, today: Date): Reason | null {
   const match = ctx.riskEvents.find((event) => {
     const months = monthsBetween(new Date(event.eventDate), today);
-    return months >= 0 && months <= RISK_WINDOW_MONTHS;
+    return months >= 0 && months <= ctx.thresholds.riskWindowMonths;
   });
   if (!match) return null;
 

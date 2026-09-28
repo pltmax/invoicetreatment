@@ -1,5 +1,4 @@
 import type { InvoiceContext, Reason } from "../types";
-import { IBAN_RECENT_CHANGE_DAYS } from "../thresholds";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -8,7 +7,7 @@ export default function ibanRecentlyChangedRule(ctx: InvoiceContext, today: Date
   if (!current) return null;
 
   const daysAgo = Math.round((today.getTime() - new Date(current.effectiveFrom).getTime()) / DAY_MS);
-  if (daysAgo < 0 || daysAgo > IBAN_RECENT_CHANGE_DAYS) return null;
+  if (daysAgo < 0 || daysAgo > ctx.thresholds.ibanRecentChangeDays) return null;
 
   const previous = ctx.ibanHistory[1];
   const mask = (iban: string) => iban.slice(-4);

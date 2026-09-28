@@ -26,4 +26,14 @@ describe("deviation-contract rule", () => {
     const ctx = buildContext({ invoice: { amountExclVatCents: 500_000, contractId: null }, contract: null });
     expect(deviationContractRule(ctx)).toBeNull();
   });
+
+  it("uses a custom orange threshold from context instead of the default 15%", () => {
+    const ctx = buildContext({
+      invoice: { amountExclVatCents: 110_000 },
+      thresholds: { deviationOrange: 0.05 },
+    });
+    const reason = deviationContractRule(ctx);
+    expect(reason?.code).toBe("DEVIATION_CONTRACT");
+    expect(reason?.level).toBe("orange");
+  });
 });

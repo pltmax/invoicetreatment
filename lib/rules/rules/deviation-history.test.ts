@@ -37,4 +37,14 @@ describe("deviation-history rule", () => {
     });
     expect(deviationHistoryRule(ctx)).toBeNull();
   });
+
+  it("uses a custom orange threshold from context instead of the default 15%", () => {
+    const ctx = buildContext({
+      invoice: { amountExclVatCents: 110_000 },
+      thresholds: { deviationOrange: 0.05 },
+    });
+    const reason = deviationHistoryRule(ctx);
+    expect(reason?.code).toBe("DEVIATION_HISTORY");
+    expect(reason?.level).toBe("orange");
+  });
 });
