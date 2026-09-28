@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createClient } from "@libsql/client";
 import { migrate } from "./migrate";
 import { seed, expectedClassifications } from "./seed";
+import { isValidSiret } from "../checks/siret";
 
 describe("seed - history", () => {
   it("creates 13 suppliers, 12 contracts, and 12 months of green history", async () => {
@@ -42,6 +43,23 @@ describe("seed - history", () => {
       args: ["sup-corvus"],
     });
     expect(Number(corvusRiskEvents.rows[0].count)).toBe(1);
+
+    db.close();
+  });
+
+  it("generates a valid, credible SIRET for every supplier", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await db.execute("SELECT siren, siret FROM suppliers");
+    expect(rows.rows.length).toBe(13);
+    for (const row of rows.rows) {
+      const siren = String(row.siren);
+      const siret = String(row.siret);
+      expect(siret.startsWith(siren)).toBe(true);
+      expect(isValidSiret(siret)).toBe(true);
+    }
 
     db.close();
   });
