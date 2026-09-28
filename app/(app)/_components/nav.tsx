@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { resetDemo } from "@/app/actions/demo";
 
 const LINKS = [
   {
@@ -107,22 +106,6 @@ export function Nav() {
           })}
         </ul>
       </nav>
-      <form action={resetDemo}>
-        <button
-          type="submit"
-          aria-label="Réinitialiser la démo"
-          title="Réinitialiser la démo"
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-gray-500"
-        >
-          <Icon>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 8v4l2.5 1.5M12 4a8 8 0 1 1-6.32 3.09M5 4v4h4"
-            />
-          </Icon>
-        </button>
-      </form>
     </header>
   );
 }

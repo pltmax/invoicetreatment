@@ -66,7 +66,7 @@ export default async function DemoCheckPage() {
       <div>
         <h1 className="text-lg font-semibold text-gray-900">Vérification de la démo</h1>
         <p className="mt-1 text-sm text-gray-500">
-          À exécuter juste après « Réinitialiser la démo », avant une présentation.
+          À exécuter juste après <code>npm run seed</code>, avant une présentation.
         </p>
       </div>
 

@@ -17,12 +17,11 @@ export async function GET(
   const pathname = await getInvoicePdfPathname(db, id);
 
   if (!pathname) {
-    // Happens for every invoice after "Réinitialiser la démo": that button
-    // reseeds the DB but doesn't re-run the (~20s, too slow for a request)
-    // bulk PDF generation script. Rather than 404 forever, render this one
-    // invoice's PDF on demand from its own row — the same deterministic
-    // render the bulk seed step would have produced — and store it so the
-    // next request hits the blob directly.
+    // Safety net for an invoice with no stored PDF (e.g. the DB was reseeded
+    // without re-running the bulk PDF generation step). Rather than 404
+    // forever, render this one invoice's PDF on demand from its own row —
+    // the same deterministic render the bulk seed step would have produced
+    // — and store it so the next request hits the blob directly.
     const source = await getInvoicePdfSourceById(db, id);
     if (!source) {
       return new NextResponse(null, { status: 404 });
