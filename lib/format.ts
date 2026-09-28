@@ -42,6 +42,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   office_supplies: "Fournitures de bureau",
   telecom_maintenance: "Maintenance télécom",
   utilities: "Énergie et fluides",
+  autre: "Autre",
 };
 
 export function formatCategory(category: string): string {

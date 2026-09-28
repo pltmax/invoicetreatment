@@ -56,6 +56,7 @@ describe("formatCategory", () => {
     expect(formatCategory("office_supplies")).toBe("Fournitures de bureau");
     expect(formatCategory("telecom_maintenance")).toBe("Maintenance télécom");
     expect(formatCategory("utilities")).toBe("Énergie et fluides");
+    expect(formatCategory("autre")).toBe("Autre");
   });
 
   it("falls back to the raw value for an unknown category", () => {
