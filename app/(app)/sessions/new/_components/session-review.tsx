@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { invoiceDetailHref } from "@/lib/batch-selection";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
 import { createBatchSession } from "@/app/actions/sign";
 import type { PendingInvoiceRow } from "@/lib/db/queries";
-import { topReasonMessage } from "@/lib/rules/top-reason";
+import { ReasonList } from "@/components/reason-list";
+import { topReasons } from "@/lib/rules/top-reason";
 
 export function SessionReview({ invoices }: { invoices: PendingInvoiceRow[] }) {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
   const remaining = invoices.filter((invoice) => !removedIds.has(invoice.id));
+  const remainingIds = remaining.map((invoice) => invoice.id);
   const total = remaining.reduce((sum, invoice) => sum + invoice.amountInclVatCents, 0);
 
   if (remaining.length === 0) {
@@ -21,16 +25,20 @@ export function SessionReview({ invoices }: { invoices: PendingInvoiceRow[] }) {
       <ul className="divide-y divide-gray-200 rounded border border-gray-200">
         {remaining.map((invoice) => (
           <li key={invoice.id} className="flex items-center gap-3 p-4">
-            <div className="min-w-0 flex-1">
+            <Link href={invoiceDetailHref(invoice.id, remainingIds)} className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="truncate font-medium text-gray-900">{invoice.supplierName}</span>
                 <Amount cents={invoice.amountInclVatCents} className="shrink-0 font-medium text-gray-900" />
               </div>
-              <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
-                {invoice.level && <LevelBadge level={invoice.level} />}
-                <span className="truncate">{topReasonMessage(invoice.reasons)}</span>
+              {invoice.level && (
+                <div className="mt-1">
+                  <LevelBadge level={invoice.level} />
+                </div>
+              )}
+              <div className="mt-2">
+                <ReasonList reasons={topReasons(invoice.reasons)} />
               </div>
-            </div>
+            </Link>
             <button
               type="button"
               onClick={() => setRemovedIds((prev) => new Set(prev).add(invoice.id))}

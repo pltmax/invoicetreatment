@@ -5,9 +5,11 @@ import Link from "next/link";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
 import type { PendingInvoiceRow } from "@/lib/db/queries";
+import { batchReviewHref } from "@/lib/batch-selection";
 import { formatDateFr } from "@/lib/format";
 import type { Level } from "@/lib/rules/types";
-import { topReasonMessage } from "@/lib/rules/top-reason";
+import { ReasonList } from "@/components/reason-list";
+import { topReasons } from "@/lib/rules/top-reason";
 
 const LEVEL_ORDER: Level[] = ["red", "orange", "green"];
 
@@ -202,8 +204,8 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
                     <div className="mt-1 text-sm text-gray-500">
                       {invoice.entityName} · {formatDateFr(invoice.dueDate)}
                     </div>
-                    <div className="mt-1 truncate text-sm text-gray-600">
-                      {topReasonMessage(invoice.reasons)}
+                    <div className="mt-2">
+                      <ReasonList reasons={topReasons(invoice.reasons)} />
                     </div>
                   </Link>
                   {level === "red" && (
@@ -228,7 +230,7 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
             <Amount cents={selectedTotal} />
           </span>
           <Link
-            href={`/sessions/new?ids=${selected.map((invoice) => invoice.id).join(",")}`}
+            href={batchReviewHref(selected.map((invoice) => invoice.id))}
             className="min-h-[44px] shrink-0 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white flex items-center justify-center"
           >
             Examiner la sélection

@@ -1,4 +1,5 @@
 import type { Reason } from "@/lib/rules/types";
+import { REASON_STYLE } from "@/lib/ui/reason-style";
 
 export function ReasonList({ reasons }: { reasons: Reason[] }) {
   if (reasons.length === 0) {
@@ -7,7 +8,7 @@ export function ReasonList({ reasons }: { reasons: Reason[] }) {
   return (
     <ul className="space-y-2">
       {reasons.map((reason, index) => (
-        <li key={index} className="text-sm text-gray-800">
+        <li key={index} className={REASON_STYLE[reason.level]}>
           {reason.message}
         </li>
       ))}
