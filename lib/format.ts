@@ -25,8 +25,8 @@ export function formatIbanGrouped(iban: string): string {
   return iban.replace(/\s+/g, "").match(/.{1,4}/g)?.join(" ") ?? iban;
 }
 
-// Every category value the seed data uses (lib/db/seed.ts). Invoices are
-// mocked, not user-entered, so this closed list covers all of them —
+// Every category value in use, kept in sync with EXTRACTION_CATEGORIES
+// (lib/extraction/schema.ts) so this closed list stays exhaustive —
 // unknown values fall back to the raw string rather than crashing.
 const CATEGORY_LABELS: Record<string, string> = {
   cloud_hosting: "Hébergement cloud",

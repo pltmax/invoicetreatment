@@ -35,7 +35,8 @@ Centralized invoice approval for a holding CEO. Subsidiaries' invoices arrive by
 - After signing, notify the owner of each invoice (mocked: log only)
 
 ## Scope for the demo
-- Mocked: email ingestion (invoices@holding.com) — except the PDF-extraction step itself, which makes a real Claude Sonnet 5 call (see /extraction); only the email transport and webhook are mocked — e-signature provider, notifications
+- Mocked: email ingestion (invoices@holding.com) — except the PDF-extraction step itself, which makes a real Claude Sonnet 5 call (see /extraction); only the email transport and webhook are mocked
+- Also mocked: e-signature provider, notifications
 - Out of scope: accounting tool integrations, non-FR suppliers
 - All data is fictional. Never use real company names, SIRENs or IBANs.
 

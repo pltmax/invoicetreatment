@@ -12,7 +12,7 @@ export async function extractInvoiceFromPdf(pdfBase64: string): Promise<Extracte
   try {
     response = await client.messages.parse({
       model: "claude-sonnet-5",
-      max_tokens: 4096,
+      max_tokens: 16000,
       messages: [
         {
           role: "user",
@@ -45,6 +45,13 @@ export async function extractInvoiceFromPdf(pdfBase64: string): Promise<Extracte
   if (!response.parsed_output) {
     throw new ExtractionError(
       "Impossible d'extraire les données de ce PDF. Vérifiez qu'il s'agit bien d'une facture lisible."
+    );
+  }
+
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  if (!ISO_DATE.test(response.parsed_output.issueDate) || !ISO_DATE.test(response.parsed_output.dueDate)) {
+    throw new ExtractionError(
+      "Impossible d'extraire les dates de cette facture. Vérifiez qu'il s'agit bien d'une facture lisible."
     );
   }
 

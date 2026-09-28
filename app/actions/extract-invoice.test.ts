@@ -6,7 +6,7 @@ vi.mock("../../lib/db/client", () => ({ db: {} }));
 
 import { migrate } from "../../lib/db/migrate";
 import { seed } from "../../lib/db/seed";
-import { resolveSupplierId, findContractId } from "./extract-invoice";
+import { resolveSupplierId, findContractId } from "../../lib/extraction/supplier-matching";
 import type { ExtractedInvoice } from "../../lib/extraction/schema";
 
 function fixture(overrides: Partial<ExtractedInvoice> = {}): ExtractedInvoice {
@@ -54,6 +54,17 @@ describe("resolveSupplierId", () => {
     db.close();
   });
 
+  it("matches an existing supplier by name when accents are missing (accent-folded)", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const supplierId = await resolveSupplierId(db, fixture({ supplierName: "NovaLink Telecom" }));
+    expect(supplierId).toBe("sup-novalink");
+
+    db.close();
+  });
+
   it("creates a new supplier with one backdated IBAN history row when nothing matches", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
@@ -89,12 +100,12 @@ describe("resolveSupplierId", () => {
 });
 
 describe("findContractId", () => {
-  it("returns the contract id for a known entity+supplier pair", async () => {
+  it("returns the contract id for a known entity+supplier+category triple", async () => {
     const db = createClient({ url: ":memory:" });
     await migrate(db);
     await seed(db);
 
-    const contractId = await findContractId(db, "ent-telecom", "sup-novalink");
+    const contractId = await findContractId(db, "ent-telecom", "sup-novalink", "telecom_maintenance", "2026-06-01");
     expect(contractId).toBe("con-novalink-telecom");
 
     db.close();
@@ -105,7 +116,18 @@ describe("findContractId", () => {
     await migrate(db);
     await seed(db);
 
-    const contractId = await findContractId(db, "ent-media", "sup-novalink");
+    const contractId = await findContractId(db, "ent-media", "sup-novalink", "telecom_maintenance", "2026-06-01");
+    expect(contractId).toBeNull();
+
+    db.close();
+  });
+
+  it("returns null when the category doesn't match the contract's category", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const contractId = await findContractId(db, "ent-telecom", "sup-novalink", "equipment", "2026-06-01");
     expect(contractId).toBeNull();
 
     db.close();

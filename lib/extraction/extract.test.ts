@@ -64,4 +64,18 @@ describe("extractInvoiceFromPdf", () => {
     await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(ExtractionError);
     await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(/Impossible d'extraire/);
   });
+
+  it("throws ExtractionError when issueDate is not ISO 8601", async () => {
+    mockParse.mockResolvedValue({ parsed_output: { ...FAKE_EXTRACTION, issueDate: "15/06/2026" } });
+
+    await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(ExtractionError);
+    await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(/Impossible d'extraire/);
+  });
+
+  it("throws ExtractionError when dueDate is not ISO 8601", async () => {
+    mockParse.mockResolvedValue({ parsed_output: { ...FAKE_EXTRACTION, dueDate: "not-a-date" } });
+
+    await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(ExtractionError);
+    await expect(extractInvoiceFromPdf("base64-pdf-data")).rejects.toThrow(/Impossible d'extraire/);
+  });
 });
