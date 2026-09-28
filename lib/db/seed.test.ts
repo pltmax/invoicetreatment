@@ -23,7 +23,7 @@ describe("seed - history", () => {
     expect(Number(approvedNovalink.rows[0].count)).toBe(12);
 
     const sessions = await db.execute("SELECT COUNT(*) as count FROM sessions");
-    expect(Number(sessions.rows[0].count)).toBe(13);
+    expect(Number(sessions.rows[0].count)).toBe(1);
 
     // 11 contracts with hasHistory=true, x12 months, + 12 months for Trans Logistique (no contract),
     // + 3 dedicated invoices for the extra 2026-09-26 session,

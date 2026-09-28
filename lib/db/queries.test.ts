@@ -198,7 +198,7 @@ describe("listSessionsWithDecisions", () => {
     await seed(db);
 
     const sessions = await listSessionsWithDecisions(db);
-    expect(sessions).toHaveLength(13);
+    expect(sessions).toHaveLength(1);
 
     const signedDates = sessions.map((s) => s.signedAt);
     expect(signedDates).toEqual([...signedDates].sort().reverse());
@@ -229,7 +229,7 @@ describe("listSessionsWithDecisions", () => {
     ]);
 
     const sessions = await listSessionsWithDecisions(db);
-    expect(sessions).toHaveLength(14);
+    expect(sessions).toHaveLength(2);
 
     const live = sessions.find((s) => s.id === created.sessionId);
     expect(live?.decisions).toHaveLength(1);

@@ -561,42 +561,21 @@ export async function seed(db: Client): Promise<void> {
     });
   }
 
-  const invoicesByMonth = new Map<number, HistoryInvoice[]>();
-  for (const invoice of historyInvoices) {
-    const list = invoicesByMonth.get(invoice.monthsAgo) ?? [];
-    list.push(invoice);
-    invoicesByMonth.set(invoice.monthsAgo, list);
-  }
-  for (const [monthsAgo, invoicesThisMonth] of invoicesByMonth) {
-    const sessionId = `${SEED_HISTORY_SESSION_PREFIX}m${monthsAgo}`;
-    const signedAt = isoDate(addDays(monthsBefore(today, monthsAgo), 3));
-    const contentHash = sha256Hex(
-      JSON.stringify({
-        sessionId,
-        decisions: invoicesThisMonth.map((i) => ({ invoiceId: i.id, outcome: "approved" })),
-        signedAt,
-      })
-    );
-    statements.push({
-      sql: "INSERT INTO sessions (id, kind, content_hash, signature_ref, signed_at) VALUES (?, 'batch', ?, ?, ?)",
-      args: [sessionId, contentHash, `MOCK-YOUSIGN-${sessionId}`, signedAt],
-    });
-    for (const invoice of invoicesThisMonth) {
-      statements.push({
-        sql: "INSERT INTO decisions (id, session_id, invoice_id, outcome) VALUES (?, ?, ?, 'approved')",
-        args: [`dec-${invoice.id}`, sessionId, invoice.id],
-      });
-    }
-  }
+  // The 12 months of history invoices above are deliberately left with no
+  // session/decisions row: they exist only so the rule engine has approved
+  // history to classify pending invoices against (deviation, recurrence,
+  // duplicate checks all key off invoices.status = 'approved', not off a
+  // session). The single dedicated session below is the only one seeded, so
+  // Notifications shows just that one instead of 12 synthetic bordereaux.
 
-  // A dedicated historical session (2026-09-26, distinct from the 12 monthly
-  // backfill sessions above) so the "Previous sessions" list has a recent,
-  // realistically-shaped entry alongside the older ones. Uses 3 suppliers of
-  // its own (rather than reusing any of the 13 demo suppliers) so it doesn't
-  // perturb the deviation/history/duplicate context the pending demo
-  // invoices are engineered against — loadContext() pulls "all invoices for
-  // this supplier_id" regardless of date, so an extra approved invoice on an
-  // existing supplier would change what classifyAll() produces for it.
+  // A dedicated historical session (2026-09-26) so Notifications and the
+  // bordereau pages have one real, recent, realistically-shaped session to
+  // show. Uses 3 suppliers of its own (rather than reusing any of the 13
+  // demo suppliers) so it doesn't perturb the deviation/history/duplicate
+  // context the pending demo invoices are engineered against —
+  // loadContext() pulls "all invoices for this supplier_id" regardless of
+  // date, so an extra approved invoice on an existing supplier would change
+  // what classifyAll() produces for it.
   {
     const extraSupplierSeeds: SupplierSeed[] = [
       { id: "sup-extra-orion", name: "Orion Facilities Conseil", base8: "40000014", bbanIndex: 14 },
