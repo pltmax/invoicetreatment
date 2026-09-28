@@ -1,7 +1,8 @@
-import React from "react";
-import { renderToBuffer } from "@react-pdf/renderer";
-import { InvoicePdfDocument, type InvoicePdfData } from "./document";
+import { buildInvoicePdfDocument, type InvoicePdfData } from "./document";
 
 export async function renderInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
-  return renderToBuffer(<InvoicePdfDocument {...data} />);
+  // Dynamic import on purpose — see the note in ./document about
+  // @react-pdf/hyphenate's ESM-only exports map and CJS resolution under tsx.
+  const { renderToBuffer } = await import("@react-pdf/renderer");
+  return renderToBuffer(await buildInvoicePdfDocument(data));
 }
