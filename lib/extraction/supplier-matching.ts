@@ -35,8 +35,8 @@ export async function resolveSupplierId(db: Client, extracted: ExtractedInvoice)
   // while printed_siren (which may be invalid) is still stored for audit/comparison.
   const uuidHash = randomUUID().replace(/-/g, "");
   // Convert first 8 hex chars to a number, then to 8 decimal digits
-  const hashNum = BigInt(`0x${uuidHash.slice(0, 8)}`);
-  const syntheticBase8 = String(hashNum % 100000000n).padStart(8, "0");
+  const hashNum = parseInt(uuidHash.slice(0, 8), 16);
+  const syntheticBase8 = String(hashNum % 100000000).padStart(8, "0");
   const syntheticSiren = generateValidSiren(syntheticBase8);
   const syntheticSiret = generateValidSiret(syntheticSiren);
 
