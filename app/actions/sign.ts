@@ -15,17 +15,31 @@ export async function createBatchSession(formData: FormData): Promise<void> {
     redirect("/");
   }
 
-  const { sessionId } = await createSession(
-    db,
-    "batch",
-    invoices.map((invoice) => ({
-      invoiceId: invoice.id,
-      entityName: invoice.entityName,
-      amountInclVatCents: invoice.amountInclVatCents,
-      outcome: "approved",
-      comment: null,
-    }))
-  );
+  let sessionId: string;
+  try {
+    const created = await createSession(
+      db,
+      "batch",
+      invoices.map((invoice) => ({
+        invoiceId: invoice.id,
+        entityName: invoice.entityName,
+        amountInclVatCents: invoice.amountInclVatCents,
+        outcome: "approved",
+        comment: null,
+      }))
+    );
+    sessionId = created.sessionId;
+  } catch {
+    // Concurrent double-submit (double-click, or the same batch submitted from
+    // two tabs): one of the writes here hits the decisions.invoice_id UNIQUE
+    // constraint because another request already recorded a decision for one
+    // of these invoices. Several sessions could now be involved, so unlike
+    // signSingleDecision there is no single existing session id to resolve to
+    // — fall back to the dashboard instead of letting the raw SQLite error
+    // propagate.
+    redirect("/");
+    return;
+  }
 
   redirect(`/sessions/${sessionId}`);
 }

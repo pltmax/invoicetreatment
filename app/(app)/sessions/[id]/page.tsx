@@ -4,7 +4,7 @@ import { getSessionWithDecisions } from "@/lib/db/queries";
 import { notificationEmail } from "@/lib/sessions";
 import { Amount } from "@/components/amount";
 import { LevelBadge } from "@/components/level-badge";
-import { formatDateFr } from "@/lib/format";
+import { formatDateTimeFr } from "@/lib/format";
 import { CopyHashButton } from "./_components/copy-hash-button";
 import { PrintButton } from "./_components/print-button";
 
@@ -28,7 +28,7 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
             <dt className="text-gray-500">Signé le</dt>
-            <dd className="text-gray-900">{formatDateFr(session.signedAt)}</dd>
+            <dd className="text-gray-900">{formatDateTimeFr(session.signedAt)}</dd>
           </div>
           <div>
             <dt className="text-gray-500">Signataire</dt>
@@ -42,6 +42,10 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
             <dt className="text-gray-500">Nombre de factures</dt>
             <dd className="text-gray-900">{session.decisions.length}</dd>
           </div>
+          <div>
+            <dt className="text-gray-500">Référence de signature</dt>
+            <dd className="text-gray-900">{session.signatureRef}</dd>
+          </div>
         </dl>
       </div>
 
@@ -52,7 +56,8 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
         ))}
       </div>
 
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-left text-gray-500">
             <th className="py-2 font-normal">Facture</th>
@@ -89,6 +94,7 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
           </tr>
         </tbody>
       </table>
+      </div>
 
       <div className="rounded border border-gray-200 p-3 text-sm">
         <p className="text-gray-500">Empreinte d&apos;intégrité (SHA-256)</p>
@@ -98,6 +104,7 @@ export default async function BordereauPage({ params }: { params: Promise<{ id: 
           </code>
           <CopyHashButton hash={session.contentHash} />
         </div>
+        <code className="hidden break-all text-gray-900 print:block">{session.contentHash}</code>
       </div>
 
       <p className="text-sm text-gray-500">

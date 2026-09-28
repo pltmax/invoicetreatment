@@ -5,6 +5,7 @@ import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
 import { createBatchSession } from "@/app/actions/sign";
 import type { PendingInvoiceRow } from "@/lib/db/queries";
+import { topReasonMessage } from "@/lib/rules/top-reason";
 
 export function SessionReview({ invoices }: { invoices: PendingInvoiceRow[] }) {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
@@ -27,7 +28,7 @@ export function SessionReview({ invoices }: { invoices: PendingInvoiceRow[] }) {
               </div>
               <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
                 {invoice.level && <LevelBadge level={invoice.level} />}
-                <span className="truncate">{invoice.reasons[0]?.message ?? "Conforme"}</span>
+                <span className="truncate">{topReasonMessage(invoice.reasons)}</span>
               </div>
             </div>
             <button

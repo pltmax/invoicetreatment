@@ -4,17 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LevelBadge } from "@/components/level-badge";
 import { Amount } from "@/components/amount";
-import { createBatchSession } from "@/app/actions/sign";
 import type { PendingInvoiceRow } from "@/lib/db/queries";
 import { formatDateFr } from "@/lib/format";
 import type { Level } from "@/lib/rules/types";
+import { topReasonMessage } from "@/lib/rules/top-reason";
 
 const LEVEL_ORDER: Level[] = ["red", "orange", "green"];
-
-function topReasonMessage(invoice: PendingInvoiceRow): string {
-  const flagged = invoice.reasons.find((r) => r.level === "red" || r.level === "orange");
-  return flagged?.message ?? invoice.reasons[0]?.message ?? "Conforme";
-}
 
 export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -99,7 +94,9 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
                     <div className="mt-1 text-sm text-gray-500">
                       {invoice.entityName} · {formatDateFr(invoice.dueDate)}
                     </div>
-                    <div className="mt-1 truncate text-sm text-gray-600">{topReasonMessage(invoice)}</div>
+                    <div className="mt-1 truncate text-sm text-gray-600">
+                      {topReasonMessage(invoice.reasons)}
+                    </div>
                   </Link>
                   {level === "red" && (
                     <Link
@@ -117,24 +114,18 @@ export function InvoiceList({ invoices }: { invoices: PendingInvoiceRow[] }) {
       )}
 
       {selected.length > 0 && (
-        <form
-          action={createBatchSession}
-          className="fixed inset-x-0 bottom-0 flex items-center justify-between gap-4 border-t border-gray-200 bg-white p-4 shadow-sm"
-        >
-          {selected.map((invoice) => (
-            <input key={invoice.id} type="hidden" name="ids" value={invoice.id} />
-          ))}
+        <div className="fixed inset-x-0 bottom-0 flex items-center justify-between gap-4 border-t border-gray-200 bg-white p-4 shadow-sm">
           <span className="text-sm text-gray-700">
             {selected.length} facture{selected.length === 1 ? "" : "s"} ·{" "}
             <Amount cents={selectedTotal} />
           </span>
-          <button
-            type="submit"
-            className="min-h-[44px] shrink-0 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+          <Link
+            href={`/sessions/new?ids=${selected.map((invoice) => invoice.id).join(",")}`}
+            className="min-h-[44px] shrink-0 rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white flex items-center justify-center"
           >
-            Approuver la sélection en lot
-          </button>
-        </form>
+            Examiner la sélection
+          </Link>
+        </div>
       )}
     </div>
   );
