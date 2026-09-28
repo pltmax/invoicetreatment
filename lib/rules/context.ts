@@ -10,10 +10,35 @@ function monthsAgoIso(today: Date, months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Split out from loadContext so classifyAll() can fetch this once per run
+// instead of once per invoice — thresholds don't vary per invoice, and each
+// fetch is a real network round trip against a remote (Turso) database.
+export async function loadThresholds(db: Client): Promise<Thresholds> {
+  const thresholdsResult = await db.execute(
+    "SELECT deviation_orange AS deviationOrange, deviation_red AS deviationRed, new_supplier_amount_cents AS newSupplierAmountCents, exceptional_amount_cents AS exceptionalAmountCents, iban_recent_change_days AS ibanRecentChangeDays, risk_window_months AS riskWindowMonths, duplicate_window_days AS duplicateWindowDays, recurring_min_invoices AS recurringMinInvoices, history_sample AS historySample FROM thresholds WHERE id = 'default'"
+  );
+  const thresholdsRow = thresholdsResult.rows[0];
+  if (!thresholdsRow) {
+    throw new Error("thresholds row not found — did seed() run?");
+  }
+  return {
+    deviationOrange: Number(thresholdsRow.deviationOrange),
+    deviationRed: Number(thresholdsRow.deviationRed),
+    newSupplierAmountCents: Number(thresholdsRow.newSupplierAmountCents),
+    exceptionalAmountCents: Number(thresholdsRow.exceptionalAmountCents),
+    ibanRecentChangeDays: Number(thresholdsRow.ibanRecentChangeDays),
+    riskWindowMonths: Number(thresholdsRow.riskWindowMonths),
+    duplicateWindowDays: Number(thresholdsRow.duplicateWindowDays),
+    recurringMinInvoices: Number(thresholdsRow.recurringMinInvoices),
+    historySample: Number(thresholdsRow.historySample),
+  };
+}
+
 export async function loadContext(
   db: Client,
   invoiceId: string,
-  today: Date
+  today: Date,
+  preloadedThresholds?: Thresholds
 ): Promise<InvoiceContext> {
   const invoiceResult = await db.execute({
     sql: `
@@ -62,24 +87,7 @@ export async function loadContext(
     status: String(invoiceRow.status),
   };
 
-  const thresholdsResult = await db.execute(
-    "SELECT deviation_orange AS deviationOrange, deviation_red AS deviationRed, new_supplier_amount_cents AS newSupplierAmountCents, exceptional_amount_cents AS exceptionalAmountCents, iban_recent_change_days AS ibanRecentChangeDays, risk_window_months AS riskWindowMonths, duplicate_window_days AS duplicateWindowDays, recurring_min_invoices AS recurringMinInvoices, history_sample AS historySample FROM thresholds WHERE id = 'default'"
-  );
-  const thresholdsRow = thresholdsResult.rows[0];
-  if (!thresholdsRow) {
-    throw new Error("thresholds row not found — did seed() run?");
-  }
-  const thresholds: Thresholds = {
-    deviationOrange: Number(thresholdsRow.deviationOrange),
-    deviationRed: Number(thresholdsRow.deviationRed),
-    newSupplierAmountCents: Number(thresholdsRow.newSupplierAmountCents),
-    exceptionalAmountCents: Number(thresholdsRow.exceptionalAmountCents),
-    ibanRecentChangeDays: Number(thresholdsRow.ibanRecentChangeDays),
-    riskWindowMonths: Number(thresholdsRow.riskWindowMonths),
-    duplicateWindowDays: Number(thresholdsRow.duplicateWindowDays),
-    recurringMinInvoices: Number(thresholdsRow.recurringMinInvoices),
-    historySample: Number(thresholdsRow.historySample),
-  };
+  const thresholds = preloadedThresholds ?? (await loadThresholds(db));
 
   const cutoff = monthsAgoIso(today, thresholds.riskWindowMonths);
   const hasContract = invoice.contractId !== null;

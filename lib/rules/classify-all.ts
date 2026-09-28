@@ -1,7 +1,7 @@
 // lib/rules/classify-all.ts
 import "server-only";
 import type { Client, InValue } from "@libsql/client";
-import { loadContext } from "./context";
+import { loadContext, loadThresholds } from "./context";
 import { classify } from "./engine";
 import { RULES_VERSION } from "./thresholds";
 
@@ -14,11 +14,24 @@ export async function classifyAll(db: Client, today: Date = new Date()): Promise
   const pending = await db.execute("SELECT id FROM invoices WHERE status = 'pending'");
   const invoiceIds = pending.rows.map((row) => String(row.id));
 
-  const statements: WriteStatement[] = [];
-  for (const invoiceId of invoiceIds) {
-    const ctx = await loadContext(db, invoiceId, today);
-    const classification = classify(ctx, today);
+  if (invoiceIds.length === 0) return;
 
+  // Fetched once and reused for every invoice: thresholds don't vary per
+  // invoice, and each fetch is a real network round trip against a remote
+  // database — refetching per invoice was the dominant cost of a reset.
+  const thresholds = await loadThresholds(db);
+
+  // Independent per-invoice reads, so run them concurrently rather than
+  // one network round trip at a time.
+  const classifications = await Promise.all(
+    invoiceIds.map(async (invoiceId) => {
+      const ctx = await loadContext(db, invoiceId, today, thresholds);
+      return { invoiceId, classification: classify(ctx, today) };
+    })
+  );
+
+  const statements: WriteStatement[] = [];
+  for (const { invoiceId, classification } of classifications) {
     statements.push({ sql: "DELETE FROM classifications WHERE invoice_id = ?", args: [invoiceId] });
     statements.push({
       sql: "INSERT INTO classifications (id, invoice_id, level, reasons, rules_version) VALUES (?, ?, ?, ?, ?)",
@@ -32,7 +45,5 @@ export async function classifyAll(db: Client, today: Date = new Date()): Promise
     });
   }
 
-  if (statements.length > 0) {
-    await db.batch(statements, "write");
-  }
+  await db.batch(statements, "write");
 }
