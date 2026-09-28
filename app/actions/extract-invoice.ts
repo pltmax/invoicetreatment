@@ -7,6 +7,7 @@ import { db } from "../../lib/db/client";
 import { classifyAll } from "../../lib/rules/classify-all";
 import { extractInvoiceFromPdf, ExtractionError } from "../../lib/extraction/extract";
 import { resolveSupplierId, findContractId } from "../../lib/extraction/supplier-matching";
+import { storeInvoicePdf } from "../../lib/pdf/store";
 import type { ExtractedInvoice } from "../../lib/extraction/schema";
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
@@ -66,6 +67,7 @@ export async function extractInvoice(formData: FormData): Promise<void> {
     ],
   });
 
+  await storeInvoicePdf(db, invoiceId, buffer);
   await classifyAll(db);
 
   redirect(`/invoices/${invoiceId}`);

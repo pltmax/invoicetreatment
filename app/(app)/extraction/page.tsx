@@ -38,9 +38,9 @@ export default async function ExtractionPage({
         </p>
         <p>
           Pour cette démo, vous pouvez déclencher cette même étape manuellement : choisissez la
-          filiale destinataire et déposez un PDF de facture ci-dessous. Le PDF n&apos;est jamais
-          stocké : il est transmis à Claude pour extraction, puis immédiatement oublié — seules
-          les données extraites sont conservées.
+          filiale destinataire et déposez un PDF de facture ci-dessous. Le PDF est transmis à
+          Claude pour extraction, puis stocké de façon privée — il reste consultable depuis la
+          fiche de la facture une fois créée.
         </p>
         <p className="text-gray-500">Utilisez uniquement des factures fictives (aucune donnée réelle).</p>
       </div>
