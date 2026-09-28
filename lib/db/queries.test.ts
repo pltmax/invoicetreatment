@@ -13,6 +13,9 @@ import {
   getThresholds,
   saveThresholds,
   getEntities,
+  getAllInvoicesForPdfGeneration,
+  setInvoicePdfPathname,
+  getInvoicePdfPathname,
 } from "./queries";
 import { createSession } from "../sessions";
 
@@ -292,6 +295,49 @@ describe("getEntities", () => {
     const names = entities.map((e) => e.name);
     expect(names).toEqual([...names].sort());
     expect(names).toContain("Arcadia Télécom");
+
+    db.close();
+  });
+});
+
+describe("getInvoicePdfPathname / setInvoicePdfPathname", () => {
+  it("returns null until a pathname is set, then returns what was set", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    expect(await getInvoicePdfPathname(db, "inv-pending-novalink")).toBeNull();
+
+    await setInvoicePdfPathname(db, "inv-pending-novalink", "invoices/inv-pending-novalink.pdf");
+
+    expect(await getInvoicePdfPathname(db, "inv-pending-novalink")).toBe(
+      "invoices/inv-pending-novalink.pdf"
+    );
+    // A different invoice is unaffected.
+    expect(await getInvoicePdfPathname(db, "inv-pending-cloudnimbus")).toBeNull();
+
+    db.close();
+  });
+});
+
+describe("getAllInvoicesForPdfGeneration", () => {
+  it("returns one row per invoice with the supplier's real SIRET and correct cent amounts", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    const rows = await getAllInvoicesForPdfGeneration(db);
+    const countResult = await db.execute("SELECT COUNT(*) AS count FROM invoices");
+    expect(rows.length).toBe(Number(countResult.rows[0].count));
+
+    const novalink = rows.find((row) => row.id === "inv-pending-novalink");
+    expect(novalink).toBeDefined();
+    expect(novalink?.invoiceNumber).toBe("PEND-NOVALINK-01");
+    expect(novalink?.supplierName).toBe("NovaLink Télécom");
+    expect(novalink?.supplierSiret).toHaveLength(14);
+    expect(novalink?.entityName).toBe("Arcadia Télécom");
+    expect(typeof novalink?.amountExclVatCents).toBe("number");
+    expect(novalink?.amountExclVatCents).toBe(180000);
 
     db.close();
   });
