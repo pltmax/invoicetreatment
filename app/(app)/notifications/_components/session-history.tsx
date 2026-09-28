@@ -152,18 +152,23 @@ export function SessionHistory({ sessions }: { sessions: SessionWithEmails[] }) 
 
                 <ul className="divide-y divide-gray-100 border-t border-gray-100">
                   {session.decisions.map((decision) => (
-                    <li key={decision.invoiceId} className="space-y-1 p-4">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-medium text-gray-900">{decision.invoiceNumber}</span>
-                        <Amount cents={decision.amountInclVatCents} className="font-medium text-gray-900" />
-                      </div>
-                      <div className="flex items-baseline justify-between gap-2 text-sm text-gray-600">
-                        <span>
-                          {decision.supplierName} · {decision.entityName}
-                        </span>
-                        <span>{decision.outcome === "approved" ? "Approuvée" : "Rejetée"}</span>
-                      </div>
-                      {decision.level && <LevelBadge level={decision.level} />}
+                    <li key={decision.invoiceId}>
+                      <Link
+                        href={`/invoices/${decision.invoiceId}`}
+                        className="block space-y-1 p-4 hover:bg-gray-50"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-medium text-gray-900">{decision.invoiceNumber}</span>
+                          <Amount cents={decision.amountInclVatCents} className="font-medium text-gray-900" />
+                        </div>
+                        <div className="flex items-baseline justify-between gap-2 text-sm text-gray-600">
+                          <span>
+                            {decision.supplierName} · {decision.entityName}
+                          </span>
+                          <span>{decision.outcome === "approved" ? "Approuvée" : "Rejetée"}</span>
+                        </div>
+                        {decision.level && <LevelBadge level={decision.level} />}
+                      </Link>
                     </li>
                   ))}
                 </ul>

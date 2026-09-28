@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { get } from "@vercel/blob";
 import { db } from "@/lib/db/client";
-import { getInvoicePdfPathname } from "@/lib/db/queries";
+import { getInvoicePdfPathname, getInvoicePdfSourceById } from "@/lib/db/queries";
+import { renderInvoicePdf } from "@/lib/pdf/generate";
+import { storeInvoicePdf } from "@/lib/pdf/store";
 
 export async function GET(
   _request: Request,
@@ -13,8 +15,26 @@ export async function GET(
   // check belongs (verify the caller may view this invoice) before the
   // PDF is streamed back.
   const pathname = await getInvoicePdfPathname(db, id);
+
   if (!pathname) {
-    return new NextResponse(null, { status: 404 });
+    // Happens for every invoice after "Réinitialiser la démo": that button
+    // reseeds the DB but doesn't re-run the (~20s, too slow for a request)
+    // bulk PDF generation script. Rather than 404 forever, render this one
+    // invoice's PDF on demand from its own row — the same deterministic
+    // render the bulk seed step would have produced — and store it so the
+    // next request hits the blob directly.
+    const source = await getInvoicePdfSourceById(db, id);
+    if (!source) {
+      return new NextResponse(null, { status: 404 });
+    }
+    const pdf = await renderInvoicePdf(source);
+    await storeInvoicePdf(db, id, pdf);
+    return new NextResponse(new Uint8Array(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Cache-Control": "private, no-cache",
+      },
+    });
   }
 
   // get() throws (rather than returning null) on credential/config failures,

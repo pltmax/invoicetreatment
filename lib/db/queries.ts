@@ -376,6 +376,49 @@ export async function getAllInvoicesForPdfGeneration(db: Client): Promise<Invoic
   }));
 }
 
+export async function getInvoicePdfSourceById(db: Client, invoiceId: string): Promise<InvoicePdfSourceRow | null> {
+  const result = await db.execute({
+    sql: `
+      SELECT
+        invoices.id AS id,
+        invoices.invoice_number AS invoiceNumber,
+        invoices.category AS category,
+        invoices.amount_excl_vat_cents AS amountExclVatCents,
+        invoices.amount_incl_vat_cents AS amountInclVatCents,
+        invoices.issue_date AS issueDate,
+        invoices.due_date AS dueDate,
+        invoices.printed_iban AS printedIban,
+        invoices.printed_siren AS printedSiren,
+        invoices.printed_vat_number AS printedVatNumber,
+        suppliers.name AS supplierName,
+        suppliers.siret AS supplierSiret,
+        entities.name AS entityName
+      FROM invoices
+      JOIN suppliers ON suppliers.id = invoices.supplier_id
+      JOIN entities ON entities.id = invoices.entity_id
+      WHERE invoices.id = ?
+    `,
+    args: [invoiceId],
+  });
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    invoiceNumber: String(row.invoiceNumber),
+    category: String(row.category),
+    amountExclVatCents: Number(row.amountExclVatCents),
+    amountInclVatCents: Number(row.amountInclVatCents),
+    issueDate: String(row.issueDate),
+    dueDate: String(row.dueDate),
+    printedIban: String(row.printedIban),
+    printedSiren: String(row.printedSiren),
+    printedVatNumber: String(row.printedVatNumber),
+    supplierName: String(row.supplierName),
+    supplierSiret: String(row.supplierSiret),
+    entityName: String(row.entityName),
+  };
+}
+
 export async function setInvoicePdfPathname(db: Client, invoiceId: string, pathname: string): Promise<void> {
   await db.execute({
     sql: "UPDATE invoices SET pdf_blob_pathname = ? WHERE id = ?",
