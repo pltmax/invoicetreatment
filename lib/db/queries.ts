@@ -2,6 +2,7 @@ import "server-only";
 import type { Client } from "@libsql/client";
 import type { Level, Reason } from "../rules/types";
 import type { Thresholds } from "../rules/thresholds";
+import type { ParsedThresholdsInput } from "../rules/threshold-form";
 import { SEED_HISTORY_SESSION_PREFIX } from "./seed";
 
 export interface PendingInvoiceRow {
@@ -287,4 +288,26 @@ export async function getThresholds(db: Client): Promise<Thresholds> {
     recurringMinInvoices: Number(row.recurringMinInvoices),
     historySample: Number(row.historySample),
   };
+}
+
+export async function saveThresholds(db: Client, values: ParsedThresholdsInput): Promise<void> {
+  await db.execute({
+    sql: `UPDATE thresholds SET
+      deviation_orange = ?, deviation_red = ?, new_supplier_amount_cents = ?,
+      exceptional_amount_cents = ?, iban_recent_change_days = ?, risk_window_months = ?,
+      duplicate_window_days = ?, recurring_min_invoices = ?, history_sample = ?,
+      updated_at = datetime('now')
+      WHERE id = 'default'`,
+    args: [
+      values.deviationOrange,
+      values.deviationRed,
+      values.newSupplierAmountCents,
+      values.exceptionalAmountCents,
+      values.ibanRecentChangeDays,
+      values.riskWindowMonths,
+      values.duplicateWindowDays,
+      values.recurringMinInvoices,
+      values.historySample,
+    ],
+  });
 }

@@ -11,6 +11,7 @@ import {
   getInboxInvoices,
   getNotifications,
   getThresholds,
+  saveThresholds,
 } from "./queries";
 import { createSession } from "../sessions";
 
@@ -238,6 +239,41 @@ describe("getThresholds", () => {
     expect(thresholds.exceptionalAmountCents).toBe(50_000_00);
     expect(thresholds.newSupplierAmountCents).toBe(5_000_00);
     expect(thresholds.historySample).toBe(6);
+
+    db.close();
+  });
+});
+
+describe("saveThresholds", () => {
+  it("persists new threshold values, overwriting the seeded defaults", async () => {
+    const db = createClient({ url: ":memory:" });
+    await migrate(db);
+    await seed(db);
+
+    await saveThresholds(db, {
+      deviationOrange: 0.2,
+      deviationRed: 0.5,
+      newSupplierAmountCents: 10_000_00,
+      exceptionalAmountCents: 75_000_00,
+      ibanRecentChangeDays: 45,
+      riskWindowMonths: 6,
+      duplicateWindowDays: 30,
+      recurringMinInvoices: 4,
+      historySample: 8,
+    });
+
+    const thresholds = await getThresholds(db);
+    expect(thresholds).toEqual({
+      deviationOrange: 0.2,
+      deviationRed: 0.5,
+      newSupplierAmountCents: 10_000_00,
+      exceptionalAmountCents: 75_000_00,
+      ibanRecentChangeDays: 45,
+      riskWindowMonths: 6,
+      duplicateWindowDays: 30,
+      recurringMinInvoices: 4,
+      historySample: 8,
+    });
 
     db.close();
   });
