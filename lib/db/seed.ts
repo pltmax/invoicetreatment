@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { Client, InValue } from "@libsql/client";
 import { generateValidSiren } from "../checks/siren";
+import { generateValidSiret } from "../checks/siret";
 import { computeVatNumber } from "../checks/vat";
 import { buildIban } from "../checks/iban";
 import { RULES_VERSION, DEFAULT_THRESHOLDS } from "../rules/thresholds";
@@ -96,6 +97,7 @@ interface Supplier {
   id: string;
   name: string;
   siren: string;
+  siret: string;
   vatNumber: string;
   registeredIban: string;
 }
@@ -107,6 +109,7 @@ function buildSuppliers(): Supplier[] {
       id: s.id,
       name: s.name,
       siren,
+      siret: generateValidSiret(siren),
       vatNumber: computeVatNumber(siren),
       registeredIban: frenchIban(s.bbanIndex),
     };
@@ -438,8 +441,8 @@ export async function seed(db: Client): Promise<void> {
 
   for (const supplier of suppliers) {
     statements.push({
-      sql: "INSERT INTO suppliers (id, name, siren, vat_number) VALUES (?, ?, ?, ?)",
-      args: [supplier.id, supplier.name, supplier.siren, supplier.vatNumber],
+      sql: "INSERT INTO suppliers (id, name, siren, siret, vat_number) VALUES (?, ?, ?, ?, ?)",
+      args: [supplier.id, supplier.name, supplier.siren, supplier.siret, supplier.vatNumber],
     });
     statements.push({
       sql: "INSERT INTO iban_history (id, supplier_id, iban, effective_from) VALUES (?, ?, ?, ?)",

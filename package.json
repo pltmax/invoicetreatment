@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "db:migrate": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/migrate.ts",
-    "db:seed": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/seed.ts",
+    "db:seed": "DOTENV_CONFIG_PATH=.env.local tsx --tsconfig tsconfig.seed.json -r dotenv/config scripts/seed.ts",
     "db:reset": "npm run db:migrate && npm run db:seed",
     "seed": "npm run db:reset",
     "classify": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS=--conditions=react-server tsx -r dotenv/config scripts/classify.ts"
@@ -17,6 +17,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@libsql/client": "^0.14.0",
+    "@react-pdf/renderer": "^4.9.0",
+    "@vercel/blob": "^2.8.0",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,6 +1,8 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Client } from "@libsql/client";
+import { generateValidSiren, isValidSiren } from "../checks/siren";
+import { generateValidSiret } from "../checks/siret";
 import type { ExtractedInvoice } from "./schema";
 
 // SQLite's LOWER() is ASCII-only, so accent differences (very plausible from
@@ -28,11 +30,32 @@ export async function resolveSupplierId(db: Client, extracted: ExtractedInvoice)
   const oneYearBeforeIssue = new Date(extracted.issueDate);
   oneYearBeforeIssue.setFullYear(oneYearBeforeIssue.getFullYear() - 1);
 
+  // A SIRET is SIREN + 5-digit NIC, so it must stay consistent with the siren
+  // column stored next to it. When the extracted SIREN is Luhn-valid, derive the
+  // SIRET from it. Otherwise fall back to a synthetic valid SIREN, since
+  // generateValidSiret throws on an invalid SIREN and PDF extraction quality is
+  // not guaranteed; the (possibly invalid) printed SIREN is still stored as-is
+  // for audit/comparison.
+  const uuidHash = randomUUID().replace(/-/g, "");
+  // Convert first 8 hex chars to a number, then to 8 decimal digits
+  const hashNum = parseInt(uuidHash.slice(0, 8), 16);
+  const syntheticBase8 = String(hashNum % 100000000).padStart(8, "0");
+  const baseSiren = isValidSiren(extracted.printedSiren)
+    ? extracted.printedSiren
+    : generateValidSiren(syntheticBase8);
+  const siret = generateValidSiret(baseSiren);
+
   await db.batch(
     [
       {
-        sql: "INSERT INTO suppliers (id, name, siren, vat_number) VALUES (?, ?, ?, ?)",
-        args: [supplierId, extracted.supplierName, extracted.printedSiren, extracted.printedVatNumber],
+        sql: "INSERT INTO suppliers (id, name, siren, siret, vat_number) VALUES (?, ?, ?, ?, ?)",
+        args: [
+          supplierId,
+          extracted.supplierName,
+          extracted.printedSiren,
+          siret,
+          extracted.printedVatNumber,
+        ],
       },
       {
         sql: "INSERT INTO iban_history (id, supplier_id, iban, effective_from) VALUES (?, ?, ?, ?)",
