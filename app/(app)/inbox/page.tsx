@@ -11,7 +11,7 @@ export default async function InboxPage() {
   const invoices = await getInboxInvoices(db);
 
   return (
-    <div className="space-y-4 px-4 py-4">
+    <div className="space-y-4 px-6 py-4">
       <div>
         <h1 className="text-lg font-semibold text-gray-900">Boîte de réception</h1>
         <p className="mt-1 text-sm text-gray-500">

@@ -14,7 +14,7 @@ export default async function RulesPage({
   const thresholds = await getThresholds(db);
 
   return (
-    <div className="space-y-8 px-4 py-4">
+    <div className="space-y-8 px-6 py-4">
       <div>
         <h1 className="text-lg font-semibold text-gray-900">Règles de classification</h1>
         <p className="mt-1 text-sm text-gray-500">

@@ -22,7 +22,7 @@ export default async function ExtractionPage({
   const errorText = error === "extraction" ? message : error ? ERROR_MESSAGES[error] : undefined;
 
   return (
-    <div className="space-y-6 px-4 py-4">
+    <div className="space-y-6 px-6 py-4">
       <div>
         <h1 className="text-lg font-semibold text-gray-900">Couche d&apos;extraction</h1>
       </div>

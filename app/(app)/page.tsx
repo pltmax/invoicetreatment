@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const invoices = await getPendingInvoices(db);
   return (
-    <div className="px-4 py-4">
+    <div className="px-6 py-4">
       <InvoiceList invoices={invoices} />
     </div>
   );
