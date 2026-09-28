@@ -6,6 +6,7 @@ Centralized invoice approval for a holding CEO. Subsidiaries' invoices arrive by
 - Next.js (App Router, TypeScript, server actions), Tailwind
 - SQLite via better-sqlite3, single file at `data/app.db`
 - Vitest for tests
+- Invoice PDFs: private Vercel Blob store (`@vercel/blob`), never a public URL — see `/api/invoices/[id]/pdf`
 
 ## Commands
 - `npm run dev`: start the app
