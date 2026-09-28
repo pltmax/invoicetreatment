@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
   // gap) — keeping it external makes Next's file tracing ship its real
   // files as-is instead of trying to bundle/tree-shake them.
   serverExternalPackages: ["@react-pdf/renderer"],
+  // pdfkit (a dependency of @react-pdf/renderer) loads its standard-font
+  // data files (Helvetica.cjs etc., plus their chunks/ subfolder) through a
+  // runtime-computed require Next's file tracer can't statically follow, so
+  // they were silently dropped from the deployed function — confirmed via
+  // Vercel runtime logs: "Cannot find module
+  // '/var/task/node_modules/pdfkit/js/standard-fonts/Helvetica.cjs'".
+  // Forcing them in here is the standard fix for this class of pdfkit/nft
+  // gap on Vercel.
+  outputFileTracingIncludes: {
+    "/api/invoices/[id]/pdf": ["./node_modules/pdfkit/js/standard-fonts/**/*"],
+  },
 };
 
 export default nextConfig;
